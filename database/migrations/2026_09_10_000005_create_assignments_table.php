@@ -1,0 +1,36 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     * Stores dispatch assignments connecting an incident, a responder, and a dispatcher.
+     */
+    public function up(): void
+    {
+        Schema::create('assignments', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('incident_id')->constrained('incidents')->onDelete('cascade');
+            $table->foreignId('responder_id')->constrained('responders')->onDelete('cascade');
+            $table->foreignId('dispatcher_id')->constrained('users')->onDelete('cascade');
+            $table->string('status')->default('assigned');  
+            $table->text('dispatcher_notes')->nullable();
+            $table->text('responder_notes')->nullable();
+            $table->timestamp('assigned_at')->nullable();
+            $table->timestamp('responded_at')->nullable();
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('assignments');
+    }
+};

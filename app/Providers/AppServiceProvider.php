@@ -22,5 +22,10 @@ class AppServiceProvider extends ServiceProvider
     {
         // Fix MySQL key length limit on older MySQL/MariaDB versions
         Schema::defaultStringLength(191);
+
+        // Force HTTPS in production (e.g. Railway) to avoid mixed content warnings
+        if (app()->environment('production') || str_starts_with(env('APP_URL', ''), 'https://')) {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+        }
     }
 }

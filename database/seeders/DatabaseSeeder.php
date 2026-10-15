@@ -19,6 +19,11 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Prevent duplicate seeding on redeploys if already seeded
+        if (User::where('email', 'admin@spectrescue.test')->exists()) {
+            return;
+        }
+
         // 1. Seed Paranormal Incident Types
         $poltergeist = IncidentType::create([
             'name' => 'Poltergeist & Haunting',

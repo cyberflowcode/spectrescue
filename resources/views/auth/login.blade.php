@@ -67,12 +67,12 @@
                 @endif
 
                 {{-- Remember --}}
-                <div class="flex items-center justify-between text-xs pt-1">
+                <!-- <div class="flex items-center justify-between text-xs pt-1">
                     <label class="flex items-center space-x-2 cursor-pointer select-none text-slate-400 hover:text-slate-300 transition-colors">
                         <input type="checkbox" name="remember" class="w-4 h-4 rounded bg-slate-950 border-slate-700 text-cyan-500 focus:ring-cyan-500">
                         <span>Keep me signed in</span>
                     </label>
-                </div>
+                </div> -->
 
                 {{-- Submit --}}
                 <button type="submit"

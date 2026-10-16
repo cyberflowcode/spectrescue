@@ -70,9 +70,14 @@ class AuthController extends Controller
             ]);
         }
 
-        // 5. Log the user in
+        // 5. Log the user in and update online status to 1
         Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();
+
+        $user->update([
+            'is_online'    => true,
+            'last_seen_at' => now(),
+        ]);
 
         return $this->redirectBasedOnRole($user)
             ->with('success', 'Welcome back, ' . $user->name . '!');
@@ -108,8 +113,13 @@ class AuthController extends Controller
             'password' => Hash::make($data['password']),
         ]);
 
-        // 3. Log the user in and redirect to citizen dashboard
+        // 3. Log the user in and mark online
         Auth::login($user);
+
+        $user->update([
+            'is_online'    => true,
+            'last_seen_at' => now(),
+        ]);
 
         return redirect()->route('citizen.dashboard')
             ->with('success', 'Your Citizen account has been created successfully!');
@@ -169,8 +179,13 @@ class AuthController extends Controller
             ]);
         }
 
-        // 5. Log in the newly registered responder
+        // 5. Log in the newly registered responder and mark online
         Auth::login($user);
+
+        $user->update([
+            'is_online'    => true,
+            'last_seen_at' => now(),
+        ]);
 
         return redirect()->route('responder.dashboard')
             ->with('success', 'Your responder application has been submitted and is pending Administrator verification.');
@@ -182,10 +197,20 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         $sessionId = $request->session()->getId();
+        $user = Auth::user();
 
+        // 1. Mark user as offline (0)
+        if ($user) {
+            $user->update([
+                'is_online'    => false,
+                'last_seen_at' => now(),
+            ]);
+        }
+
+        // 2. Perform logout
         Auth::logout();
 
-        // Remove the session from database to immediately release the device lock
+        // 3. Remove session from database to immediately release the device lock
         if ($sessionId) {
             DB::table('sessions')->where('id', $sessionId)->delete();
         }

@@ -258,7 +258,7 @@
                                     <option value="">Select Verified Specialist...</option>
                                     @foreach($availableResponders as $resp)
                                         <option value="{{ $resp->id }}">
-                                            {{ $resp->user->name }} &bull; {{ $resp->specialization }} ({{ $resp->badge_number }})
+                                            {{ $resp->user->name }} &bull; {{ $resp->specialization }} ({{ $resp->badge_number }}) {{ $resp->user->isOnline() ? '● [ONLINE]' : '○ [OFFLINE]' }}
                                         </option>
                                     @endforeach
                                 @endif

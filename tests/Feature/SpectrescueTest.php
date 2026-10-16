@@ -480,6 +480,36 @@ test('single device login restriction blocks concurrent logins on other devices'
     $this->assertAuthenticatedAs($citizen);
 });
 
+test('user online and offline status changes appropriately on login and logout', function () {
+    $citizen = User::where('role', 'citizen')->first();
+    $citizen->update([
+        'is_online'    => false,
+        'last_seen_at' => null,
+    ]);
 
+    expect($citizen->fresh()->isOnline())->toBeFalse();
+    expect($citizen->fresh()->is_online)->toBeFalse();
 
+    // 1. Log in
+    $response = $this->post('/login', [
+        'email'    => $citizen->email,
+        'password' => 'password',
+    ]);
 
+    $response->assertRedirect(route('citizen.dashboard'));
+    $this->assertAuthenticatedAs($citizen);
+
+    $citizen->refresh();
+    expect($citizen->is_online)->toBeTrue();
+    expect($citizen->last_seen_at)->not->toBeNull();
+    expect($citizen->isOnline())->toBeTrue();
+
+    // 2. Log out
+    $logoutResponse = $this->post('/logout');
+    $logoutResponse->assertRedirect(route('login'));
+    $this->assertGuest();
+
+    $citizen->refresh();
+    expect($citizen->is_online)->toBeFalse();
+    expect($citizen->isOnline())->toBeFalse();
+});

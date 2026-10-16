@@ -26,10 +26,19 @@ class RoleMiddleware
         }
 
         // 2. Ensure user has one of the authorized roles
-        $userRole = Auth::user()->role;
+        $user = Auth::user();
+        $userRole = $user->role;
 
         if (!in_array($userRole, $roles)) {
             abort(403, 'Access denied. Your account role (' . ucfirst($userRole) . ') is not authorized to view this page.');
+        }
+
+        // 3. Keep online status & last activity timestamp fresh (throttled to once every 2 minutes)
+        if (!$user->is_online || !$user->last_seen_at || $user->last_seen_at->lt(now()->subMinutes(2))) {
+            $user->update([
+                'is_online'    => true,
+                'last_seen_at' => now(),
+            ]);
         }
 
         return $next($request);

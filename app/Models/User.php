@@ -20,6 +20,8 @@ class User extends Authenticatable
         'phone',
         'role',
         'is_active',
+        'is_online',
+        'last_seen_at',
         'password',
     ];
 
@@ -40,6 +42,8 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password'         => 'hashed',
             'is_active'        => 'boolean',
+            'is_online'        => 'boolean',
+            'last_seen_at'     => 'datetime',
         ];
     }
 
@@ -73,6 +77,23 @@ class User extends Authenticatable
     public function isActive(): bool
     {
         return (bool) $this->is_active;
+    }
+
+    /**
+     * Check if this user is currently online.
+     * Evaluates is_online flag and verifies last activity was within 15 minutes.
+     */
+    public function isOnline(): bool
+    {
+        if (!$this->is_online) {
+            return false;
+        }
+
+        if (!$this->last_seen_at) {
+            return false;
+        }
+
+        return $this->last_seen_at->gt(now()->subMinutes(15));
     }
 
     // ==========================================

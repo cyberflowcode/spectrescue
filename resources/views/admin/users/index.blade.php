@@ -117,17 +117,27 @@
                             @endif
                         </td>
                         <td class="py-4 px-6">
-                            @if($u->is_active)
-                                <span class="inline-flex items-center space-x-1.5 text-xs font-mono text-emerald-400">
-                                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-                                    <span>Active</span>
-                                </span>
-                            @else
-                                <span class="inline-flex items-center space-x-1.5 text-xs font-mono text-red-400">
-                                    <span class="w-2 h-2 rounded-full bg-red-400"></span>
-                                    <span>Deactivated</span>
-                                </span>
-                            @endif
+                            <div class="space-y-1">
+                                @if($u->isOnline())
+                                    <span class="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                        <span>Online</span>
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-800 text-slate-400 border border-slate-700">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+                                        <span>Offline</span>
+                                    </span>
+                                @endif
+
+                                <div>
+                                    @if($u->is_active)
+                                        <span class="text-[11px] font-mono text-slate-300">Active</span>
+                                    @else
+                                        <span class="text-[11px] font-mono text-red-400">Deactivated</span>
+                                    @endif
+                                </div>
+                            </div>
                         </td>
                         <td class="py-4 px-6 font-mono text-xs text-slate-500">
                             {{ $u->created_at->format('M d, Y') }}
@@ -198,11 +208,22 @@
                     </span>
                 </div>
                 <div class="flex items-center justify-between pt-2 border-t border-slate-800/80">
-                    <div>
-                        @if($u->is_active)
-                            <span class="text-xs text-emerald-400 font-mono">● Active</span>
+                    <div class="flex items-center space-x-2">
+                        @if($u->isOnline())
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center space-x-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                <span>Online</span>
+                            </span>
                         @else
-                            <span class="text-xs text-red-400 font-mono">● Deactivated</span>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-800 text-slate-400 border border-slate-700">
+                                Offline
+                            </span>
+                        @endif
+
+                        @if($u->is_active)
+                            <span class="text-xs text-slate-300 font-mono">Active</span>
+                        @else
+                            <span class="text-xs text-red-400 font-mono">Deactivated</span>
                         @endif
                     </div>
                     <div class="flex items-center space-x-2">

@@ -63,9 +63,9 @@ Route::middleware('auth')->group(function () {
 });
 
 // ==========================================
-// 3. Citizen Routes (role: citizen, admin)
+// 3. Citizen Routes (role: citizen)
 // ==========================================
-Route::middleware(['auth', 'role:citizen,admin'])->prefix('citizen')->as('citizen.')->group(function () {
+Route::middleware(['auth', 'role:citizen'])->prefix('citizen')->as('citizen.')->group(function () {
     Route::get('/dashboard', [CitizenController::class, 'dashboard'])->name('dashboard');
     Route::get('/incidents', [CitizenController::class, 'dashboard'])->name('incidents.index');
     Route::get('/incidents/create', [CitizenController::class, 'createIncident'])->name('incidents.create');
@@ -77,9 +77,9 @@ Route::middleware(['auth', 'role:citizen,admin'])->prefix('citizen')->as('citize
 });
 
 // ==========================================
-// 4. Dispatcher Routes (role: dispatcher, admin)
+// 4. Dispatcher Routes (role: dispatcher)
 // ==========================================
-Route::middleware(['auth', 'role:dispatcher,admin'])->prefix('dispatcher')->as('dispatcher.')->group(function () {
+Route::middleware(['auth', 'role:dispatcher'])->prefix('dispatcher')->as('dispatcher.')->group(function () {
     Route::get('/dashboard', [DispatcherController::class, 'dashboard'])->name('dashboard');
     Route::get('/incidents/{incident}', [DispatcherController::class, 'showIncident'])->name('incidents.show');
     Route::post('/incidents/{incident}/assign', [DispatcherController::class, 'assignResponder'])->name('incidents.assign');
@@ -88,9 +88,9 @@ Route::middleware(['auth', 'role:dispatcher,admin'])->prefix('dispatcher')->as('
 });
 
 // ==========================================
-// 5. Responder Routes (role: responder, admin)
+// 5. Responder Routes (role: responder)
 // ==========================================
-Route::middleware(['auth', 'role:responder,admin'])->prefix('responder')->as('responder.')->group(function () {
+Route::middleware(['auth', 'role:responder'])->prefix('responder')->as('responder.')->group(function () {
     Route::get('/dashboard', [ResponderController::class, 'dashboard'])->name('dashboard');
     Route::get('/assignments/{assignment}', [ResponderController::class, 'showAssignment'])->name('assignments.show');
     Route::post('/assignments/{assignment}/respond', [ResponderController::class, 'respondAssignment'])->name('assignments.respond');

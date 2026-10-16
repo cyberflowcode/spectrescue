@@ -544,3 +544,12 @@ test('user online and offline status changes appropriately on login and logout',
     expect($citizen->is_online)->toBeFalse();
     expect($citizen->isOnline())->toBeFalse();
 });
+
+test('admin cannot access citizen, dispatcher, or responder portals and receives 403', function () {
+    $admin = User::where('role', 'admin')->first();
+
+    $this->actingAs($admin)->get('/citizen/dashboard')->assertStatus(403);
+    $this->actingAs($admin)->get('/citizen/incidents/create')->assertStatus(403);
+    $this->actingAs($admin)->get('/dispatcher/dashboard')->assertStatus(403);
+    $this->actingAs($admin)->get('/responder/dashboard')->assertStatus(403);
+});

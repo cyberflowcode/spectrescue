@@ -196,7 +196,7 @@ class AdminController extends Controller
         $rules = [
             'name'      => ['required', 'string', 'max:191'],
             'email'     => ['required', 'email', 'max:191', 'unique:users,email'],
-            'phone'     => ['nullable', 'string', 'max:50'],
+            'phone'     => ['nullable', 'string', 'starts_with:09', 'regex:/^09[0-9\s-]{9,12}$/'],
             'role'      => ['required', 'in:citizen,dispatcher,responder,admin'],
             'password'  => ['required', 'string', 'min:6'],
             'is_active' => ['required', 'boolean'],
@@ -211,7 +211,10 @@ class AdminController extends Controller
             $rules['is_available']        = ['required', 'boolean'];
         }
 
-        $data = $request->validate($rules);
+        $data = $request->validate($rules, [
+            'phone.starts_with' => 'The phone number must start with 09 (e.g., 09123456789).',
+            'phone.regex'       => 'The phone number must start with 09 and contain 11 digits.',
+        ]);
 
         // 1. Create the base user account
         $user = User::create([
@@ -307,7 +310,7 @@ class AdminController extends Controller
         $rules = [
             'name'      => ['required', 'string', 'max:191'],
             'email'     => ['required', 'email', 'max:191', Rule::unique('users')->ignore($user->id)],
-            'phone'     => ['nullable', 'string', 'max:50'],
+            'phone'     => ['nullable', 'string', 'starts_with:09', 'regex:/^09[0-9\s-]{9,12}$/'],
             'role'      => ['required', 'in:citizen,dispatcher,responder,admin'],
             'password'  => ['nullable', 'string', 'min:6'],
             'is_active' => ['required', 'boolean'],
@@ -321,7 +324,10 @@ class AdminController extends Controller
             $rules['is_available']        = ['required', 'boolean'];
         }
 
-        $data = $request->validate($rules);
+        $data = $request->validate($rules, [
+            'phone.starts_with' => 'The phone number must start with 09 (e.g., 09123456789).',
+            'phone.regex'       => 'The phone number must start with 09 and contain 11 digits.',
+        ]);
 
         // Update core user attributes
         $user->name      = $data['name'];

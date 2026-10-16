@@ -65,7 +65,7 @@ class DatabaseSeeder extends Seeder
         $admin = User::create([
             'name' => 'Chief Director Vance',
             'email' => 'admin@spectrescue.test',
-            'phone' => '+63 917 888 7732',
+            'phone' => '0917 888 7732',
             'role' => 'admin',
             'password' => Hash::make('password'),
         ]);

@@ -57,11 +57,14 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="space-y-1.5">
-                        <label for="phone" class="block text-xs font-semibold text-slate-300">Emergency Phone</label>
-                        <input id="phone" type="text" name="phone" value="{{ old('phone') }}"
-                            required placeholder="09XX XXX XXXX" maxlength="13" inputmode="numeric"
-                            class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-sm placeholder-slate-600
-                            focus:outline-none focus:border-indigo-500 transition-colors font-mono">
+                        <label for="phone" class="block text-xs font-semibold text-slate-300">
+                            Emergency Phone <span class="text-slate-400 font-normal">(starts with 09)</span> <span class="text-red-400">*</span>
+                        </label>
+                        <input id="phone" type="tel" name="phone" value="{{ old('phone') }}"
+                            required placeholder="0912 345 6789" maxlength="13" inputmode="numeric"
+                            class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border text-white text-sm placeholder-slate-600
+                            focus:outline-none transition-colors font-mono
+                            {{ $errors->has('phone') ? 'border-red-500' : 'border-slate-700 focus:border-indigo-500' }}">
                         @error('phone')<p class="text-xs text-red-400">{{ $message }}</p>@enderror
                     </div>
                     <div class="space-y-1.5">

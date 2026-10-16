@@ -108,8 +108,11 @@ class AuthController extends Controller
         $data = $request->validate([
             'name'     => ['required', 'string', 'max:191'],
             'email'    => ['required', 'email', 'max:191', 'unique:users,email'],
-            'phone'    => ['nullable', 'string', 'max:50'],
+            'phone'    => ['nullable', 'string', 'starts_with:09', 'regex:/^09[0-9\s-]{9,12}$/'],
             'password' => ['required', 'string', 'min:6', 'confirmed'],
+        ], [
+            'phone.starts_with' => 'The phone number must start with 09 (e.g., 09123456789).',
+            'phone.regex'       => 'The phone number must start with 09 and contain 11 digits.',
         ]);
 
         // 2. Create the user with 'citizen' role
@@ -150,11 +153,14 @@ class AuthController extends Controller
         $data = $request->validate([
             'name'           => ['required', 'string', 'max:191'],
             'email'          => ['required', 'email', 'max:191', 'unique:users,email'],
-            'phone'          => ['required', 'string', 'max:50'],
+            'phone'          => ['required', 'string', 'starts_with:09', 'regex:/^09[0-9\s-]{9,12}$/'],
             'password'       => ['required', 'string', 'min:6', 'confirmed'],
             'specialization' => ['required', 'string', 'max:191'],
             'badge_number'   => ['required', 'string', 'max:100', 'unique:responders,badge_number'],
             'bio'            => ['nullable', 'string', 'max:1000'],
+        ], [
+            'phone.starts_with' => 'The phone number must start with 09 (e.g., 09123456789).',
+            'phone.regex'       => 'The phone number must start with 09 and contain 11 digits.',
         ]);
 
         // 2. Create the User account with 'responder' role

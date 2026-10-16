@@ -51,12 +51,13 @@
                 </div>
                 <div class="space-y-1.5">
                     <label for="phone" class="block text-xs font-semibold text-slate-300">
-                        Phone <span class="text-slate-500 font-normal">(optional)</span>
+                        Phone <span class="text-slate-500 font-normal">(starts with 09)</span>
                     </label>
-                    <input id="phone" type="text" name="phone" value="{{ old('phone', $user->phone) }}"
-                        placeholder="09XX XXX XXXX"
-                        class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-sm
-                        focus:outline-none focus:border-cyan-500 transition-colors">
+                    <input id="phone" type="tel" name="phone" value="{{ old('phone', $user->phone) }}"
+                        placeholder="0912 345 6789" maxlength="13" inputmode="numeric"
+                        class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border text-white text-sm font-mono
+                        focus:outline-none transition-colors
+                        {{ $errors->has('phone') ? 'border-red-500' : 'border-slate-700 focus:border-cyan-500' }}">
                     @error('phone')<p class="text-xs text-red-400">{{ $message }}</p>@enderror
                 </div>
             </div>

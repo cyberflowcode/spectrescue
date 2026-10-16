@@ -60,10 +60,11 @@
                     {{-- Phone Number --}}
                     <div class="space-y-1.5">
                         <label for="phone" class="block text-xs font-semibold uppercase tracking-wider text-slate-300">
-                            Contact Phone
+                            Contact Phone <span class="text-slate-500 font-normal lowercase">(starts with 09)</span>
                         </label>
-                        <input id="phone" type="text" name="phone" value="{{ old('phone') }}" placeholder="0912 345 6789" maxlength="13"
-                            class="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm font-mono">
+                        <input id="phone" type="tel" name="phone" value="{{ old('phone') }}" placeholder="0912 345 6789" maxlength="13"
+                            class="w-full px-4 py-2.5 rounded-xl bg-slate-950 border text-white placeholder-slate-500 focus:outline-none focus:ring-1 text-sm font-mono
+                            {{ $errors->has('phone') ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-slate-700 focus:border-indigo-500 focus:ring-indigo-500' }}">
                         @error('phone')
                             <p class="text-xs text-red-400">{{ $message }}</p>
                         @enderror

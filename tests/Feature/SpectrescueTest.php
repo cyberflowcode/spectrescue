@@ -553,3 +553,26 @@ test('admin accessing citizen, dispatcher, or responder portals is auto redirect
     $this->actingAs($admin)->get('/dispatcher/dashboard')->assertRedirect(route('admin.dashboard'));
     $this->actingAs($admin)->get('/responder/dashboard')->assertRedirect(route('admin.dashboard'));
 });
+
+test('citizen registration validates that phone number must start with 09', function () {
+    // 1. Attempt with phone not starting with 09 -> fails with error message
+    $invalidResponse = $this->post('/register', [
+        'name'                  => 'Test Citizen',
+        'email'                 => 'invalid.phone@test.com',
+        'phone'                 => '08123456789',
+        'password'              => 'password',
+        'password_confirmation' => 'password',
+    ]);
+    $invalidResponse->assertSessionHasErrors(['phone']);
+
+    // 2. Attempt with valid phone starting with 09 -> succeeds
+    $validResponse = $this->post('/register', [
+        'name'                  => 'Valid Citizen',
+        'email'                 => 'valid.phone@test.com',
+        'phone'                 => '09171234567',
+        'password'              => 'password',
+        'password_confirmation' => 'password',
+    ]);
+    $validResponse->assertRedirect(route('citizen.dashboard'));
+    $this->assertDatabaseHas('users', ['email' => 'valid.phone@test.com', 'phone' => '09171234567']);
+});

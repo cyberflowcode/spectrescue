@@ -95,31 +95,30 @@
     <div class="flex items-center justify-between w-full px-4 sm:px-6">
 
         {{-- Brand Logo --}}
-        <div class="flex items-center space-x-3">
+        <div class="flex items-center space-x-2 sm:space-x-3 min-w-0">
             {{-- Mobile hamburger --}}
-
             @auth
             <button id="mobile-menu-btn" aria-label="Open menu"
-                class="lg:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
+                class="lg:hidden w-10 h-10 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors shrink-0">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                 </svg>
             </button>
             @endauth
 
-            <a href="{{ route('home') }}" class="flex items-center space-x-2.5 group shrink-0">
-                <div class="w-9 h-9 rounded-xl bg-cyan-600
-                    flex items-center justify-center shadow-lg shadow-cyan-600/20 group-hover:scale-105 transition-transform">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <a href="{{ route('home') }}" class="flex items-center space-x-2 sm:space-x-2.5 group shrink-0">
+                <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-cyan-600
+                    flex items-center justify-center shadow-lg shadow-cyan-600/20 group-hover:scale-105 transition-transform shrink-0">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2"
                             d="M13 10V3L4 14h7v7l9-11h-7z"/>
                     </svg>
                 </div>
-                <div class="hidden sm:block">
-                    <div class="text-base font-extrabold tracking-wider leading-none">
+                <div>
+                    <div class="text-sm sm:text-base font-extrabold tracking-wider leading-none">
                         <span class="text-cyan-400">SPECT</span><span class="text-white">RESCUE</span>
                     </div>
-                    <div class="text-[9px] uppercase tracking-[0.18em] text-slate-500 font-mono mt-0.5">Paranormal Dispatch</div>
+                    <div class="hidden xs:block sm:block text-[8px] sm:text-[9px] uppercase tracking-[0.18em] text-slate-500 font-mono mt-0.5">Paranormal Dispatch</div>
                 </div>
             </a>
 
@@ -198,7 +197,7 @@
 
                 {{-- User pill --}}
                 <div class="flex items-center space-x-2 pl-2 border-l border-slate-800">
-                    <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase
+                    <span class="hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase
                         @if(Auth::user()->isAdmin()) bg-indigo-500/20 text-indigo-400 border border-indigo-500/40
                         @elseif(Auth::user()->isDispatcher()) bg-amber-500/20 text-amber-400 border border-amber-500/40
                         @elseif(Auth::user()->isResponder()) bg-cyan-500/20 text-cyan-400 border border-cyan-500/40
@@ -214,11 +213,13 @@
                     </span>
 
                     <a href="{{ route('profile.edit') }}"
-                        class="text-sm font-semibold text-slate-200 hover:text-cyan-400 transition-colors max-w-[120px] truncate">
+                        class="text-xs sm:text-sm font-semibold text-slate-200 hover:text-cyan-400 transition-colors max-w-[85px] sm:max-w-[130px] truncate"
+                        title="{{ Auth::user()->name }}">
                         {{ Auth::user()->name }}
                     </a>
 
-                    <form method="POST" action="{{ route('logout') }}" class="inline">
+                    {{-- Desktop-only logout button (Mobile logout is accessed via the mobile menu drawer, avoiding redundancy) --}}
+                    <form method="POST" action="{{ route('logout') }}" class="hidden lg:inline-block">
                         @csrf
                         <button type="submit" title="Log Out"
                             class="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-colors">
@@ -369,28 +370,27 @@
 
     {{-- Mobile Drawer --}}
     <div id="mobile-drawer"
-        class="fixed top-0 left-0 bottom-0 z-50 w-72 bg-slate-900 border-r border-slate-800
-        transform -translate-x-full transition-transform duration-300 lg:hidden overflow-y-auto">
+        class="fixed top-0 left-0 bottom-0 z-50 w-72 max-w-[85vw] bg-slate-900 border-r border-slate-800
+        transform -translate-x-full transition-transform duration-300 lg:hidden overflow-y-auto flex flex-col justify-between">
 
-        {{-- Drawer Header --}}
-        <div class="flex items-center justify-between p-4 border-b border-slate-800">
-            <div class="flex items-center space-x-2.5">
-                <div class="w-8 h-8 rounded-xl bg-cyan-600 flex items-center justify-center">
-                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        <div>
+            {{-- Drawer Header with User Profile --}}
+            <div class="flex items-center justify-between p-4 border-b border-slate-800">
+                <div class="flex items-center space-x-3 min-w-0">
+                    <div class="w-9 h-9 rounded-xl bg-cyan-600 flex items-center justify-center font-bold text-white text-xs shrink-0 shadow-md shadow-cyan-600/30">
+                        {{ strtoupper(substr(Auth::user()->name, 0, 2)) }}
+                    </div>
+                    <div class="min-w-0">
+                        <div class="text-sm font-bold text-white truncate">{{ Auth::user()->name }}</div>
+                        <div class="text-[10px] text-cyan-400 font-mono uppercase tracking-wider font-semibold">{{ Auth::user()->role }}</div>
+                    </div>
+                </div>
+                <button onclick="closeMobileMenu()" class="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
-                </div>
-                <div>
-                    <div class="text-sm font-bold text-white">SPECTRESCUE</div>
-                    <div class="text-[10px] text-slate-500 font-mono uppercase">{{ Auth::user()->role }}</div>
-                </div>
+                </button>
             </div>
-            <button onclick="closeMobileMenu()" class="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-            </button>
-        </div>
 
         {{-- Drawer Nav --}}
         <nav class="p-3 space-y-1">
@@ -531,14 +531,15 @@
                 </form>
             </div>
         </nav>
+        </div>
     </div>
     @endauth
 
     {{-- ===== MAIN CONTENT AREA ===== --}}
-    <div class="flex-1 min-w-0 flex flex-col">
+    <div class="flex-1 min-w-0 flex flex-col w-full overflow-x-hidden">
 
         {{-- Flash Messages --}}
-        <div class="px-4 sm:px-6 lg:px-8 {{ (session('success') || session('error') || session('info') || $errors->any()) ? 'pt-4 space-y-2' : '' }}" id="flash-container">
+        <div class="px-3 sm:px-6 lg:px-8 {{ (session('success') || session('error') || session('info') || $errors->any()) ? 'pt-4 space-y-2' : '' }}" id="flash-container">
             @if(session('success'))
                 <div class="alert-animate p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300
                     flex items-center justify-between shadow-lg shadow-emerald-950/30">
@@ -593,7 +594,7 @@
         </div>
 
         {{-- Page Content --}}
-        <main class="flex-1 flex flex-col px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+        <main class="flex-1 flex flex-col px-3 sm:px-6 lg:px-8 py-3.5 sm:py-6 w-full max-w-full overflow-x-hidden">
             @yield('content')
         </main>
     </div>

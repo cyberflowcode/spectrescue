@@ -45,7 +45,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
 
             {{-- LEFT COLUMN: Incident Form Fields --}}
-            <div class="lg:col-span-6 space-y-6 bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xl shadow-slate-950/50">
+            <div class="lg:col-span-6 space-y-6 bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 lg:p-8 shadow-xl shadow-slate-950/50">
 
                 <div class="flex items-center space-x-2.5 pb-3 border-b border-slate-800">
                     <div class="w-3 h-3 rounded-full bg-cyan-400"></div>
@@ -218,7 +218,7 @@
             {{-- RIGHT COLUMN: Tactical Map Card (Sticky on Desktop) --}}
             <div class="lg:col-span-6 lg:sticky lg:top-20 space-y-4">
 
-                <div class="rounded-2xl bg-slate-900 border border-cyan-500/30 p-5 shadow-xl shadow-cyan-950/20 space-y-4">
+                <div class="rounded-2xl bg-slate-900 border border-cyan-500/30 p-4 sm:p-5 shadow-xl shadow-cyan-950/20 space-y-4">
 
                     {{-- Map Header --}}
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3.5">
@@ -275,6 +275,20 @@
                     {{-- Hidden form inputs for coordinates --}}
                     <input type="hidden" name="latitude" id="latitude" value="{{ old('latitude', $incident->latitude ?? '14.6091000') }}">
                     <input type="hidden" name="longitude" id="longitude" value="{{ old('longitude', $incident->longitude ?? '121.0223000') }}">
+
+                    {{-- Mobile Save Action Buttons --}}
+                    <div class="lg:hidden flex items-center space-x-3 pt-2">
+                        <button type="submit" class="flex-1 py-3.5 rounded-xl font-bold bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-500/25 transition-all flex items-center justify-center space-x-2 text-sm cursor-pointer">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>Save &amp; Update Incident</span>
+                        </button>
+                        <a href="{{ route('citizen.incidents.show', $incident->id) }}"
+                            class="px-4 py-3.5 rounded-xl font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs transition-colors">
+                            Cancel
+                        </a>
+                    </div>
                 </div>
 
             </div>

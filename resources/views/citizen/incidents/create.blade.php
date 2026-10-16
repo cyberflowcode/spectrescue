@@ -27,7 +27,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
 
             {{-- LEFT COLUMN: Incident Form --}}
-            <div class="lg:col-span-6 space-y-6 bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xl shadow-slate-950/50">
+            <div class="lg:col-span-6 space-y-6 bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 lg:p-8 shadow-xl shadow-slate-950/50">
 
                 <div class="flex items-center space-x-2.5 pb-3 border-b border-slate-800">
                     <div class="w-3 h-3 rounded-full bg-cyan-400"></div>
@@ -152,7 +152,7 @@
             {{-- RIGHT COLUMN: Tactical Map Card (Sticky on Desktop) --}}
             <div class="lg:col-span-6 lg:sticky lg:top-20 space-y-4">
 
-                <div class="rounded-2xl bg-slate-900 border border-cyan-500/30 p-5 shadow-xl shadow-cyan-950/20 space-y-4">
+                <div class="rounded-2xl bg-slate-900 border border-cyan-500/30 p-4 sm:p-5 shadow-xl shadow-cyan-950/20 space-y-4">
 
                     {{-- Map Header --}}
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3.5">
@@ -197,6 +197,16 @@
                     {{-- Hidden form inputs for coordinates --}}
                     <input type="hidden" name="latitude" id="latitude" value="{{ old('latitude', '14.6091000') }}">
                     <input type="hidden" name="longitude" id="longitude" value="{{ old('longitude', '121.0223000') }}">
+
+                    {{-- Mobile Submit Button --}}
+                    <div class="lg:hidden pt-2">
+                        <button type="submit" class="w-full py-3.5 rounded-xl font-bold bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-600/30 transition-all flex items-center justify-center space-x-2.5 text-base cursor-pointer">
+                            <svg class="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            <span>Transmit Paranormal Emergency Call &rarr;</span>
+                        </button>
+                    </div>
                 </div>
 
             </div>

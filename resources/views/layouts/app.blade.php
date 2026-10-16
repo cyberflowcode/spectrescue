@@ -6,10 +6,12 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="description" content="SPECTRESCUE - Centralized paranormal emergency dispatch and response management system.">
 
-    <title>@yield('title', 'Paranormal Emergency Dispatch')</title>
-    <!-- Favicon / Title Icon -->
-    <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
-    <link rel="shortcut icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+    <title>@hasSection('title')@yield('title') &bull; SPECTRESCUE @else SPECTRESCUE &bull; Paranormal Emergency Dispatch @endif</title>
+    <!-- Favicon / Browser Tab Icon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%230891b2'/%3E%3Cpath d='M13 3L4 14h7v7l9-11h-7V3z' fill='%23ffffff'/%3E%3C/svg%3E">
+    <link rel="alternate icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
+    <link rel="alternate icon" type="image/png" href="{{ asset('favicon.png') }}">
+    <link rel="shortcut icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%230891b2'/%3E%3Cpath d='M13 3L4 14h7v7l9-11h-7V3z' fill='%23ffffff'/%3E%3C/svg%3E">
     <link rel="apple-touch-icon" href="{{ asset('favicon.png') }}">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

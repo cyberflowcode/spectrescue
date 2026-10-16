@@ -162,15 +162,18 @@
                         <label for="badge_number" class="block text-xs font-semibold uppercase tracking-wider text-slate-300">
                             Badge Number <span class="text-red-400">*</span>
                         </label>
-                        <div class="flex items-center space-x-2">
+                        <div class="relative flex items-center">
                             <input id="badge_number" type="text" name="badge_number"
                                 value="{{ old('badge_number', $user->responderProfile->badge_number ?? '') }}"
                                 placeholder="e.g. EXO-4921"
-                                class="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 text-sm font-mono">
+                                class="w-full pl-4 pr-24 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 text-sm font-mono">
                             <button type="button" onclick="generateBadgeNumber()"
-                                class="px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-400 text-xs font-mono shrink-0 transition-colors"
+                                class="absolute right-1.5 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold shadow-md shadow-cyan-600/20 transition-all flex items-center space-x-1 cursor-pointer"
                                 title="Auto-generate badge number">
-                                Auto
+                                <svg class="w-3.5 h-3.5 text-cyan-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                </svg>
+                                <span>Auto</span>
                             </button>
                         </div>
                         @error('badge_number')

@@ -56,39 +56,50 @@
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {{-- Emergency Phone --}}
                     <div class="space-y-1.5">
                         <label for="phone" class="block text-xs font-semibold text-slate-300">
-                            Emergency Phone <span class="text-slate-400 font-normal">(starts with 09)</span> <span class="text-red-400">*</span>
+                            Emergency Phone <span class="text-red-400">*</span>
                         </label>
                         <input id="phone" type="tel" name="phone" value="{{ old('phone') }}"
                             required placeholder="0912 345 6789" maxlength="13" inputmode="numeric"
                             class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border text-white text-sm placeholder-slate-600
                             focus:outline-none transition-colors font-mono
                             {{ $errors->has('phone') ? 'border-red-500' : 'border-slate-700 focus:border-indigo-500' }}">
-                        @error('phone')<p class="text-xs text-red-400">{{ $message }}</p>@enderror
+                        @if($errors->has('phone'))
+                            <p class="text-xs text-red-400 mt-1">{{ $errors->first('phone') }}</p>
+                        @else
+                            <p class="text-[11px] text-slate-500 mt-1">Must start with 09 (11 digits)</p>
+                        @endif
                     </div>
+
+                    {{-- Badge Number with Auto Button --}}
                     <div class="space-y-1.5">
-                        <div class="flex items-center justify-between">
-                            <label for="badge_number" class="block text-xs font-semibold text-slate-300">
-                                Badge / License ID <span class="text-red-400">*</span>
-                            </label>
+                        <label for="badge_number" class="block text-xs font-semibold text-slate-300">
+                            Badge / License ID <span class="text-red-400">*</span>
+                        </label>
+                        <div class="relative flex items-center">
+                            <input id="badge_number" type="text" name="badge_number" value="{{ old('badge_number') }}"
+                                required placeholder="Click 'Auto' to generate"
+                                class="w-full pl-3.5 pr-22 py-2.5 rounded-xl bg-slate-950/80 border text-white text-sm placeholder-slate-600
+                                focus:outline-none transition-colors font-mono
+                                {{ $errors->has('badge_number') || $errors->has('badge_auto_generated') ? 'border-red-500' : 'border-slate-700 focus:border-indigo-500' }}">
                             <button type="button" id="btn-auto-badge" onclick="generateAutoBadge()"
-                                class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/40 transition-all cursor-pointer shadow-sm">
-                                <svg class="w-3 h-3 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                class="absolute right-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/20 transition-all flex items-center space-x-1 cursor-pointer">
+                                <svg class="w-3.5 h-3.5 text-indigo-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                                 </svg>
-                                <span>⚡ Auto Badge</span>
+                                <span>Auto</span>
                             </button>
                         </div>
-                        <input id="badge_number" type="text" name="badge_number" value="{{ old('badge_number') }}"
-                            required placeholder="Click '⚡ Auto Badge'"
-                            class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/80 border text-white text-sm placeholder-slate-600
-                            focus:outline-none transition-colors font-mono
-                            {{ $errors->has('badge_number') || $errors->has('badge_auto_generated') ? 'border-red-500' : 'border-slate-700 focus:border-indigo-500' }}">
                         <input type="hidden" id="badge_auto_generated" name="badge_auto_generated" value="{{ old('badge_auto_generated', '0') }}">
-                        @error('badge_number')<p class="text-xs text-red-400 mt-1">{{ $message }}</p>@enderror
-                        @error('badge_auto_generated')<p class="text-xs text-red-400 mt-1">{{ $message }}</p>@enderror
-                        <p class="text-[11px] text-slate-500">Badge must be auto-generated by the system. Click <strong>⚡ Auto Badge</strong> above.</p>
+                        @if($errors->has('badge_number'))
+                            <p class="text-xs text-red-400 mt-1">{{ $errors->first('badge_number') }}</p>
+                        @elseif($errors->has('badge_auto_generated'))
+                            <p class="text-xs text-red-400 mt-1">{{ $errors->first('badge_auto_generated') }}</p>
+                        @else
+                            <p class="text-[11px] text-slate-500 mt-1">Click <strong>Auto</strong> to generate badge ID</p>
+                        @endif
                     </div>
                 </div>
 
@@ -97,35 +108,42 @@
                     <label for="specialization" class="block text-xs font-semibold text-slate-300">
                         Field Specialization <span class="text-red-400">*</span>
                     </label>
-                    <select id="specialization" name="specialization" required onchange="handleSpecializationChange()"
-                        class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-sm
-                        focus:outline-none focus:border-indigo-500 transition-colors">
-                        <option value="" data-prefix="RSP">Select your specialization…</option>
-                        @if(isset($specializations) && $specializations->count() > 0)
-                            @foreach($specializations as $spec)
-                                <option value="{{ $spec->name }}"
-                                    data-prefix="{{ $spec->code_prefix ?? 'RSP' }}"
-                                    {{ old('specialization') == $spec->name ? 'selected' : '' }}>
-                                    {{ $spec->name }} ({{ $spec->code_prefix ?? 'RSP' }})
-                                </option>
-                            @endforeach
-                        @else
-                            @foreach([
-                                ['name' => 'Senior Exorcist & Demonologist', 'prefix' => 'EXO'],
-                                ['name' => 'High-Tech Ghost Hunter (EMF/Thermal)', 'prefix' => 'GHT'],
-                                ['name' => 'Cleric / Sanctification Specialist', 'prefix' => 'CLR'],
-                                ['name' => 'Clairvoyant Medium & Astral Communicator', 'prefix' => 'MED'],
-                                ['name' => 'Cryptid & Anomaly Tracker', 'prefix' => 'CRY'],
-                                ['name' => 'Occult Relic Containment Specialist', 'prefix' => 'OCC'],
-                            ] as $defaultSpec)
-                                <option value="{{ $defaultSpec['name'] }}"
-                                    data-prefix="{{ $defaultSpec['prefix'] }}"
-                                    {{ old('specialization') == $defaultSpec['name'] ? 'selected' : '' }}>
-                                    {{ $defaultSpec['name'] }} ({{ $defaultSpec['prefix'] }})
-                                </option>
-                            @endforeach
-                        @endif
-                    </select>
+                    <div class="relative">
+                        <select id="specialization" name="specialization" required onchange="handleSpecializationChange()"
+                            class="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-sm
+                            focus:outline-none focus:border-indigo-500 transition-colors appearance-none cursor-pointer">
+                            <option value="" data-prefix="RSP">Select your specialization…</option>
+                            @if(isset($specializations) && $specializations->count() > 0)
+                                @foreach($specializations as $spec)
+                                    <option value="{{ $spec->name }}"
+                                        data-prefix="{{ $spec->code_prefix ?? 'RSP' }}"
+                                        {{ old('specialization') == $spec->name ? 'selected' : '' }}>
+                                        {{ $spec->name }} ({{ $spec->code_prefix ?? 'RSP' }})
+                                    </option>
+                                @endforeach
+                            @else
+                                @foreach([
+                                    ['name' => 'Senior Exorcist & Demonologist', 'prefix' => 'EXO'],
+                                    ['name' => 'High-Tech Ghost Hunter (EMF/Thermal)', 'prefix' => 'GHT'],
+                                    ['name' => 'Cleric / Sanctification Specialist', 'prefix' => 'CLR'],
+                                    ['name' => 'Clairvoyant Medium & Astral Communicator', 'prefix' => 'MED'],
+                                    ['name' => 'Cryptid & Anomaly Tracker', 'prefix' => 'CRY'],
+                                    ['name' => 'Occult Relic Containment Specialist', 'prefix' => 'OCC'],
+                                ] as $defaultSpec)
+                                    <option value="{{ $defaultSpec['name'] }}"
+                                        data-prefix="{{ $defaultSpec['prefix'] }}"
+                                        {{ old('specialization') == $defaultSpec['name'] ? 'selected' : '' }}>
+                                        {{ $defaultSpec['name'] }} ({{ $defaultSpec['prefix'] }})
+                                    </option>
+                                @endforeach
+                            @endif
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </div>
+                    </div>
                     @error('specialization')<p class="text-xs text-red-400">{{ $message }}</p>@enderror
                 </div>
 

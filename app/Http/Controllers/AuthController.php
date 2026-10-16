@@ -52,22 +52,30 @@ class AuthController extends Controller
         }
 
         // 4. Single-Device Session Check:
-        // Detect if this account already has an active session on another device/browser
-        $sessionLifetime = config('session.lifetime', 120);
-        $activeThreshold = now()->subMinutes($sessionLifetime)->getTimestamp();
-        $currentSessionId = $request->session()->getId();
+        // Only block if this account is actually marked online (is_online = 1)
+        // and has an active session from another device/browser in the sessions table.
+        if ($user->is_online) {
+            $sessionLifetime = config('session.lifetime', 120);
+            $activeThreshold = now()->subMinutes($sessionLifetime)->getTimestamp();
+            $currentSessionId = $request->session()->getId();
 
-        $hasActiveSession = DB::table('sessions')
-            ->where('user_id', $user->id)
-            ->where('id', '!=', $currentSessionId)
-            ->where('last_activity', '>=', $activeThreshold)
-            ->exists();
+            $hasActiveSession = DB::table('sessions')
+                ->where('user_id', $user->id)
+                ->where('id', '!=', $currentSessionId)
+                ->where('last_activity', '>=', $activeThreshold)
+                ->exists();
 
-        // If an active session exists on another device, strictly block this new login attempt
-        if ($hasActiveSession) {
-            return back()->withInput($request->only('email'))->withErrors([
-                'session_blocked' => 'This account is currently logged in on another device. Please log out from that device first before logging in here.',
-            ]);
+            // If the user is currently online on another device, block this login attempt
+            if ($hasActiveSession) {
+                return back()->withInput($request->only('email'))->withErrors([
+                    'session_blocked' => 'This account is currently logged in on another device. Please log out from that device first before logging in here.',
+                ]);
+            }
+        } else {
+            // If is_online is 0, user is offline. Clean up any leftover stale sessions
+            DB::table('sessions')
+                ->where('user_id', $user->id)
+                ->delete();
         }
 
         // 5. Log the user in and update online status to 1

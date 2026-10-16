@@ -449,7 +449,12 @@ test('admin can create, update, and delete phenomenon classifications', function
 test('single device login restriction blocks concurrent logins on other devices', function () {
     $citizen = User::where('role', 'citizen')->first();
 
-    // 1. Simulate an existing active session on Device A
+    // 1. Simulate an existing active session on Device A with citizen marked online
+    $citizen->update([
+        'is_online'    => true,
+        'last_seen_at' => now(),
+    ]);
+
     \Illuminate\Support\Facades\DB::table('sessions')->insert([
         'id'            => 'device-a-session-id',
         'user_id'       => $citizen->id,
@@ -470,6 +475,7 @@ test('single device login restriction blocks concurrent logins on other devices'
 
     // 3. When Device A logs out, Device B can log in successfully
     \Illuminate\Support\Facades\DB::table('sessions')->where('id', 'device-a-session-id')->delete();
+    $citizen->update(['is_online' => false]);
 
     $secondAttempt = $this->post('/login', [
         'email'    => $citizen->email,
@@ -478,6 +484,31 @@ test('single device login restriction blocks concurrent logins on other devices'
 
     $secondAttempt->assertRedirect(route('citizen.dashboard'));
     $this->assertAuthenticatedAs($citizen);
+});
+
+test('user with is_online 0 can log in and stale sessions are cleaned up', function () {
+    $citizen = User::where('role', 'citizen')->first();
+    $citizen->update(['is_online' => false]);
+
+    // Stale session left behind from previously closed browser
+    \Illuminate\Support\Facades\DB::table('sessions')->insert([
+        'id'            => 'stale-session-id',
+        'user_id'       => $citizen->id,
+        'ip_address'    => '127.0.0.1',
+        'user_agent'    => 'Old Browser',
+        'payload'       => serialize([]),
+        'last_activity' => now()->timestamp,
+    ]);
+
+    $response = $this->post('/login', [
+        'email'    => $citizen->email,
+        'password' => 'password',
+    ]);
+
+    $response->assertRedirect(route('citizen.dashboard'));
+    $this->assertAuthenticatedAs($citizen);
+    expect($citizen->fresh()->is_online)->toBeTrue();
+    $this->assertDatabaseMissing('sessions', ['id' => 'stale-session-id']);
 });
 
 test('user online and offline status changes appropriately on login and logout', function () {

@@ -63,20 +63,11 @@ class AuthController extends Controller
             ->where('last_activity', '>=', $activeThreshold)
             ->exists();
 
-        // If user chose to terminate other sessions, clear them out
-        if ($request->boolean('force_logout')) {
-            DB::table('sessions')
-                ->where('user_id', $user->id)
-                ->where('id', '!=', $currentSessionId)
-                ->delete();
-            $hasActiveSession = false;
-        }
-
-        // If an active session exists on another device, block this new login attempt
+        // If an active session exists on another device, strictly block this new login attempt
         if ($hasActiveSession) {
             return back()->withInput($request->only('email'))->withErrors([
-                'session_blocked' => 'This account is currently logged in on another device. Simultaneous logins are disabled for security.',
-            ])->with('can_force_logout', true);
+                'session_blocked' => 'This account is currently logged in on another device. Please log out from that device first before logging in here.',
+            ]);
         }
 
         // 5. Log the user in

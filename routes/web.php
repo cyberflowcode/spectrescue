@@ -77,10 +77,11 @@ Route::middleware(['auth', 'role:citizen'])->prefix('citizen')->as('citizen.')->
 });
 
 // ==========================================
-// 4. Dispatcher Routes (role: dispatcher)
 // ==========================================
-Route::middleware(['auth', 'role:dispatcher'])->prefix('dispatcher')->as('dispatcher.')->group(function () {
-    Route::get('/dashboard', [DispatcherController::class, 'dashboard'])->name('dashboard');
+// 4. Dispatcher Routes (role: dispatcher, admin)
+// ==========================================
+Route::middleware(['auth', 'role:dispatcher,admin'])->prefix('dispatcher')->as('dispatcher.')->group(function () {
+    Route::get('/dashboard', [DispatcherController::class, 'dashboard'])->name('dashboard')->middleware('role:dispatcher');
     Route::get('/incidents/{incident}', [DispatcherController::class, 'showIncident'])->name('incidents.show');
     Route::post('/incidents/{incident}/assign', [DispatcherController::class, 'assignResponder'])->name('incidents.assign');
     Route::post('/incidents/{incident}/threat', [DispatcherController::class, 'updateThreatLevel'])->name('incidents.threat');
@@ -106,6 +107,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->as('admin.')->group(
     Route::get('/responders', [AdminController::class, 'responders'])->name('responders.index');
     Route::post('/responders/{responder}/verify', [AdminController::class, 'verifyResponder'])->name('responders.verify');
     Route::get('/incidents', [AdminController::class, 'incidents'])->name('incidents.index');
+    Route::get('/incidents/{incident}', [DispatcherController::class, 'showIncident'])->name('incidents.show');
     Route::post('/incidents/{incident}/override-status', [AdminController::class, 'overrideIncidentStatus'])->name('incidents.override_status');
     Route::get('/reports', [AdminController::class, 'reports'])->name('reports.index');
 

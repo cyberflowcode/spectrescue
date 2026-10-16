@@ -475,7 +475,7 @@
                         &bull; <span class="text-slate-500">{{ $incident->created_at->diffForHumans() }}</span>
                     </div>
                 </div>
-                <a href="{{ route('dispatcher.incidents.show', $incident->id) }}"
+                <a href="{{ route('admin.incidents.show', $incident->id) }}"
                     class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-medium transition-colors shrink-0">
                     Inspect →
                 </a>

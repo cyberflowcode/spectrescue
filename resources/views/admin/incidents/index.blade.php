@@ -114,7 +114,7 @@
                             </form>
                         </td>
                         <td class="py-4 px-5 text-right align-middle whitespace-nowrap">
-                            <a href="{{ route('dispatcher.incidents.show', $incident->id) }}"
+                            <a href="{{ route('admin.incidents.show', $incident->id) }}"
                                 class="inline-flex items-center px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-medium transition-colors">
                                 Console →
                             </a>
@@ -159,7 +159,7 @@
                             Override
                         </button>
                     </form>
-                    <a href="{{ route('dispatcher.incidents.show', $incident->id) }}"
+                    <a href="{{ route('admin.incidents.show', $incident->id) }}"
                         class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 text-xs transition-colors">
                         View
                     </a>

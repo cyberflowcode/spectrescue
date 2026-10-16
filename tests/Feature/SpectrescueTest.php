@@ -671,3 +671,24 @@ test('admin can manage responder specializations CRUD', function () {
         'id' => $spec->id,
     ]);
 });
+
+test('admin can inspect emergency incidents from recent emergency activity', function () {
+    $admin = User::where('role', 'admin')->first();
+    $incident = Incident::first();
+
+    // 1. Admin dashboard shows the Inspect link to admin.incidents.show
+    $dashboardResponse = $this->actingAs($admin)->get(route('admin.dashboard'));
+    $dashboardResponse->assertStatus(200);
+    $dashboardResponse->assertSee(route('admin.incidents.show', $incident->id));
+
+    // 2. Admin can visit admin.incidents.show directly without being redirected
+    $inspectResponse = $this->actingAs($admin)->get(route('admin.incidents.show', $incident->id));
+    $inspectResponse->assertStatus(200);
+    $inspectResponse->assertSee($incident->tracking_code);
+
+    // 3. Admin can also access dispatcher.incidents.show directly without being blocked by role middleware
+    $dispatcherInspectResponse = $this->actingAs($admin)->get(route('dispatcher.incidents.show', $incident->id));
+    $dispatcherInspectResponse->assertStatus(200);
+    $dispatcherInspectResponse->assertSee($incident->tracking_code);
+});
+

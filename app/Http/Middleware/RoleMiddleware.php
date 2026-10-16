@@ -30,7 +30,16 @@ class RoleMiddleware
         $userRole = $user->role;
 
         if (!in_array($userRole, $roles)) {
-            abort(403, 'Access denied. Your account role (' . ucfirst($userRole) . ') is not authorized to view this page.');
+            // Automatically redirect to the logged-in user's role dashboard (no button click needed)
+            $targetRoute = match ($userRole) {
+                'admin'      => 'admin.dashboard',
+                'dispatcher' => 'dispatcher.dashboard',
+                'responder'  => 'responder.dashboard',
+                default      => 'citizen.dashboard',
+            };
+
+            return redirect()->route($targetRoute)
+                ->with('error', 'Access restricted. You were automatically redirected to your ' . ucfirst($userRole) . ' dashboard.');
         }
 
         // 3. Keep online status & last activity timestamp fresh (throttled to once every 2 minutes)

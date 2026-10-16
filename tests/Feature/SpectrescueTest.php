@@ -328,10 +328,10 @@ test('admin can view and edit user accounts', function () {
     expect($citizen->name)->toBe('Updated Citizen Name');
     expect($citizen->phone)->toBe('0917 123 4567');
 
-    // 5. Non-admin users cannot access admin user management
-    $this->actingAs($citizen)->get('/admin/users')->assertStatus(403);
-    $this->actingAs($citizen)->get("/admin/users/{$citizen->id}")->assertStatus(403);
-    $this->actingAs($citizen)->get("/admin/users/{$citizen->id}/edit")->assertStatus(403);
+    // 5. Non-admin users cannot access admin user management (auto-redirected to their dashboard)
+    $this->actingAs($citizen)->get('/admin/users')->assertRedirect(route('citizen.dashboard'));
+    $this->actingAs($citizen)->get("/admin/users/{$citizen->id}")->assertRedirect(route('citizen.dashboard'));
+    $this->actingAs($citizen)->get("/admin/users/{$citizen->id}/edit")->assertRedirect(route('citizen.dashboard'));
 });
 
 test('admin can access create user form and create citizen or responder', function () {
@@ -545,11 +545,11 @@ test('user online and offline status changes appropriately on login and logout',
     expect($citizen->isOnline())->toBeFalse();
 });
 
-test('admin cannot access citizen, dispatcher, or responder portals and receives 403', function () {
+test('admin accessing citizen, dispatcher, or responder portals is auto redirected to admin dashboard', function () {
     $admin = User::where('role', 'admin')->first();
 
-    $this->actingAs($admin)->get('/citizen/dashboard')->assertStatus(403);
-    $this->actingAs($admin)->get('/citizen/incidents/create')->assertStatus(403);
-    $this->actingAs($admin)->get('/dispatcher/dashboard')->assertStatus(403);
-    $this->actingAs($admin)->get('/responder/dashboard')->assertStatus(403);
+    $this->actingAs($admin)->get('/citizen/dashboard')->assertRedirect(route('admin.dashboard'));
+    $this->actingAs($admin)->get('/citizen/incidents/create')->assertRedirect(route('admin.dashboard'));
+    $this->actingAs($admin)->get('/dispatcher/dashboard')->assertRedirect(route('admin.dashboard'));
+    $this->actingAs($admin)->get('/responder/dashboard')->assertRedirect(route('admin.dashboard'));
 });

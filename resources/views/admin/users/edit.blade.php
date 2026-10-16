@@ -131,10 +131,27 @@
                         <label for="specialization" class="block text-xs font-semibold uppercase tracking-wider text-slate-300">
                             Specialization <span class="text-red-400">*</span>
                         </label>
-                        <input id="specialization" type="text" name="specialization"
-                            value="{{ old('specialization', $user->responderProfile->specialization ?? 'High-Tech Ghost Hunter') }}"
-                            placeholder="e.g. Exorcist, Ghost Hunter, Medium"
-                            class="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 text-sm">
+                        <select id="specialization" name="specialization"
+                            class="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 text-sm">
+                            <option value="">-- Select Field Specialization --</option>
+                            @php
+                                $currentSpec = old('specialization', $user->responderProfile->specialization ?? '');
+                                $foundMatch = false;
+                            @endphp
+                            @foreach($specializations ?? [] as $spec)
+                                @php
+                                    $isSelected = ($currentSpec === $spec->name);
+                                    if ($isSelected) $foundMatch = true;
+                                @endphp
+                                <option value="{{ $spec->name }}" data-prefix="{{ $spec->code_prefix }}"
+                                    {{ $isSelected ? 'selected' : '' }}>
+                                    {{ $spec->name }} ({{ $spec->code_prefix }})
+                                </option>
+                            @endforeach
+                            @if($currentSpec && !$foundMatch)
+                                <option value="{{ $currentSpec }}" selected>{{ $currentSpec }} (Custom)</option>
+                            @endif
+                        </select>
                         @error('specialization')
                             <p class="text-xs text-red-400">{{ $message }}</p>
                         @enderror
@@ -145,10 +162,17 @@
                         <label for="badge_number" class="block text-xs font-semibold uppercase tracking-wider text-slate-300">
                             Badge Number <span class="text-red-400">*</span>
                         </label>
-                        <input id="badge_number" type="text" name="badge_number"
-                            value="{{ old('badge_number', $user->responderProfile->badge_number ?? 'GHT-' . rand(100, 999)) }}"
-                            placeholder="e.g. GHT-204"
-                            class="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 text-sm font-mono">
+                        <div class="flex items-center space-x-2">
+                            <input id="badge_number" type="text" name="badge_number"
+                                value="{{ old('badge_number', $user->responderProfile->badge_number ?? '') }}"
+                                placeholder="e.g. EXO-4921"
+                                class="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 text-sm font-mono">
+                            <button type="button" onclick="generateBadgeNumber()"
+                                class="px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-400 text-xs font-mono shrink-0 transition-colors"
+                                title="Auto-generate badge number">
+                                Auto
+                            </button>
+                        </div>
                         @error('badge_number')
                             <p class="text-xs text-red-400">{{ $message }}</p>
                         @enderror
@@ -253,6 +277,19 @@
             });
         }
     });
+
+    function generateBadgeNumber() {
+        const specSelect = document.getElementById('specialization');
+        let prefix = 'RSP';
+        if (specSelect && specSelect.selectedIndex >= 0) {
+            const opt = specSelect.options[specSelect.selectedIndex];
+            if (opt && opt.dataset.prefix) {
+                prefix = opt.dataset.prefix;
+            }
+        }
+        const randomNum = Math.floor(1000 + Math.random() * 9000);
+        document.getElementById('badge_number').value = prefix + '-' + randomNum;
+    }
 </script>
 @endpush
 @endsection

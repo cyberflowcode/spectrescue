@@ -9,6 +9,7 @@ use App\Models\Incident;
 use App\Models\Assignment;
 use App\Models\Response;
 use App\Models\Notification;
+use App\Models\Specialization;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -19,6 +20,44 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // 0. Seed Responder Specializations
+        $specializations = [
+            [
+                'name'        => 'Senior Exorcist & Demonologist',
+                'code_prefix' => 'EXO',
+                'description' => 'Specialist in demonic possession, sanctification rites, and dark entity banishment.',
+            ],
+            [
+                'name'        => 'High-Tech Ghost Hunter (EMF/Thermal)',
+                'code_prefix' => 'GHT',
+                'description' => 'Specialist utilizing thermal imagers, calibrated EMF sensors, and salt containment arrays.',
+            ],
+            [
+                'name'        => 'Cleric / Sanctification Specialist',
+                'code_prefix' => 'CLR',
+                'description' => 'Specialist in holy grounds protection, warding circles, and spiritual blessings.',
+            ],
+            [
+                'name'        => 'Clairvoyant Medium & Astral Communicator',
+                'code_prefix' => 'MED',
+                'description' => 'Specialist in spirit channeling, seances, and paranormal trace readings.',
+            ],
+            [
+                'name'        => 'Cryptid & Anomaly Tracker',
+                'code_prefix' => 'CRY',
+                'description' => 'Field scout specialized in tracking anomalous creatures, beasts, and physical cryptids.',
+            ],
+            [
+                'name'        => 'Occult Relic Containment Specialist',
+                'code_prefix' => 'OCC',
+                'description' => 'Expert in handling hazardous relics, cursed artifacts, and psychically active objects.',
+            ],
+        ];
+
+        foreach ($specializations as $spec) {
+            Specialization::firstOrCreate(['name' => $spec['name']], $spec);
+        }
+
         // Prevent duplicate seeding on redeploys if already seeded
         if (User::where('email', 'admin@spectrescue.test')->exists()) {
             return;

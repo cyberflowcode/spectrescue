@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Responder;
 use App\Models\Notification;
+use App\Models\Specialization;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -141,7 +142,8 @@ class AuthController extends Controller
      */
     public function showResponderRegister()
     {
-        return view('auth.register-responder');
+        $specializations = Specialization::where('is_active', true)->orderBy('name')->get();
+        return view('auth.register-responder', compact('specializations'));
     }
 
     /**
@@ -151,16 +153,21 @@ class AuthController extends Controller
     {
         // 1. Validate both user and responder profile information
         $data = $request->validate([
-            'name'           => ['required', 'string', 'max:191'],
-            'email'          => ['required', 'email', 'max:191', 'unique:users,email'],
-            'phone'          => ['required', 'string', 'starts_with:09', 'regex:/^09[0-9\s-]{9,12}$/'],
-            'password'       => ['required', 'string', 'min:6', 'confirmed'],
-            'specialization' => ['required', 'string', 'max:191'],
-            'badge_number'   => ['required', 'string', 'max:100', 'unique:responders,badge_number'],
-            'bio'            => ['nullable', 'string', 'max:1000'],
+            'name'                 => ['required', 'string', 'max:191'],
+            'email'                => ['required', 'email', 'max:191', 'unique:users,email'],
+            'phone'                => ['required', 'string', 'starts_with:09', 'regex:/^09[0-9\s-]{9,12}$/'],
+            'password'             => ['required', 'string', 'min:6', 'confirmed'],
+            'specialization'       => ['required', 'string', 'max:191'],
+            'badge_number'         => ['required', 'string', 'max:100', 'unique:responders,badge_number', 'regex:/^[A-Z0-9]{2,6}-[0-9]{3,6}$/i'],
+            'badge_auto_generated' => ['required', 'in:1'],
+            'bio'                  => ['nullable', 'string', 'max:1000'],
         ], [
-            'phone.starts_with' => 'The phone number must start with 09 (e.g., 09123456789).',
-            'phone.regex'       => 'The phone number must start with 09 and contain 11 digits.',
+            'badge_auto_generated.required' => 'Manual badge entry is not allowed. You must click the "Auto Badge" button to generate your badge ID.',
+            'badge_auto_generated.in'       => 'Manual badge entry is not allowed. You must click the "Auto Badge" button to generate your badge ID.',
+            'badge_number.required'         => 'The badge / license ID is required. Please click "Auto Badge".',
+            'badge_number.regex'            => 'The badge number format is invalid. Please click the "Auto Badge" button.',
+            'phone.starts_with'             => 'The phone number must start with 09 (e.g., 09123456789).',
+            'phone.regex'                   => 'The phone number must start with 09 and contain 11 digits.',
         ]);
 
         // 2. Create the User account with 'responder' role

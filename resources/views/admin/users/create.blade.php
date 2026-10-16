@@ -132,18 +132,16 @@
                         <label for="specialization" class="block text-xs font-semibold uppercase tracking-wider text-slate-300">
                             Primary Specialization <span class="text-red-400">*</span>
                         </label>
-                        <input id="specialization" type="text" name="specialization" value="{{ old('specialization') }}"
-                            placeholder="e.g. Exorcist, Paranormal Investigator"
-                            list="specializationList"
-                            class="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 text-sm">
-                        <datalist id="specializationList">
-                            <option value="Paranormal Investigator">
-                            <option value="Exorcist">
-                            <option value="Medium / Clairvoyant">
-                            <option value="Occult Researcher">
-                            <option value="Demonologist">
-                            <option value="Entity Containment Specialist">
-                        </datalist>
+                        <select id="specialization" name="specialization" onchange="updateBadgePrefix(this)"
+                            class="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 text-sm">
+                            <option value="">-- Select Field Specialization --</option>
+                            @foreach($specializations ?? [] as $spec)
+                                <option value="{{ $spec->name }}" data-prefix="{{ $spec->code_prefix }}"
+                                    {{ old('specialization') === $spec->name ? 'selected' : '' }}>
+                                    {{ $spec->name }} ({{ $spec->code_prefix }})
+                                </option>
+                            @endforeach
+                        </select>
                         @error('specialization')
                             <p class="text-xs text-red-400">{{ $message }}</p>
                         @enderror
@@ -252,9 +250,21 @@
         }
     }
 
+    function updateBadgePrefix(selectEl) {
+        generateBadgeNumber();
+    }
+
     function generateBadgeNumber() {
+        const specSelect = document.getElementById('specialization');
+        let prefix = 'RSP';
+        if (specSelect && specSelect.selectedIndex >= 0) {
+            const opt = specSelect.options[specSelect.selectedIndex];
+            if (opt && opt.dataset.prefix) {
+                prefix = opt.dataset.prefix;
+            }
+        }
         const randomNum = Math.floor(1000 + Math.random() * 9000);
-        document.getElementById('badge_number').value = 'RES-2026-' + randomNum;
+        document.getElementById('badge_number').value = prefix + '-' + randomNum;
     }
 
     // Phone formatting (e.g. 0912 345 6789)

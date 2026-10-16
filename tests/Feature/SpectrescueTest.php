@@ -576,3 +576,98 @@ test('citizen registration validates that phone number must start with 09', func
     $validResponse->assertRedirect(route('citizen.dashboard'));
     $this->assertDatabaseHas('users', ['email' => 'valid.phone@test.com', 'phone' => '09171234567']);
 });
+
+test('responder registration requires auto-generated badge and validates phone starts with 09', function () {
+    // 1. Attempt manual badge entry without clicking auto button -> fails
+    $manualBadgeResponse = $this->post('/register-responder', [
+        'name'                  => 'Manual Badge Applicant',
+        'email'                 => 'manual.badge@test.com',
+        'phone'                 => '09171234567',
+        'specialization'        => 'Senior Exorcist & Demonologist',
+        'badge_number'          => 'MY-OWN-BADGE',
+        'badge_auto_generated'  => '0',
+        'password'              => 'password',
+        'password_confirmation' => 'password',
+    ]);
+    $manualBadgeResponse->assertSessionHasErrors(['badge_auto_generated']);
+
+    // 2. Attempt with phone not starting with 09 -> fails
+    $invalidPhoneResponse = $this->post('/register-responder', [
+        'name'                  => 'Invalid Phone Applicant',
+        'email'                 => 'invalid.phone@test.com',
+        'phone'                 => '08123456789',
+        'specialization'        => 'Senior Exorcist & Demonologist',
+        'badge_number'          => 'EXO-1234',
+        'badge_auto_generated'  => '1',
+        'password'              => 'password',
+        'password_confirmation' => 'password',
+    ]);
+    $invalidPhoneResponse->assertSessionHasErrors(['phone']);
+
+    // 3. Successful registration with auto-generated badge and valid 09 phone
+    $validResponse = $this->post('/register-responder', [
+        'name'                  => 'Legit Field Exorcist',
+        'email'                 => 'legit.exorcist@test.com',
+        'phone'                 => '09181234567',
+        'specialization'        => 'Senior Exorcist & Demonologist',
+        'badge_number'          => 'EXO-5678',
+        'badge_auto_generated'  => '1',
+        'bio'                   => 'Extensive field experience in demonic cleansing.',
+        'password'              => 'password',
+        'password_confirmation' => 'password',
+    ]);
+    $validResponse->assertRedirect(route('responder.dashboard'));
+    $this->assertDatabaseHas('users', ['email' => 'legit.exorcist@test.com', 'role' => 'responder']);
+    $this->assertDatabaseHas('responders', ['badge_number' => 'EXO-5678', 'verification_status' => 'pending']);
+});
+
+test('admin can manage responder specializations CRUD', function () {
+    $admin = User::where('role', 'admin')->first();
+
+    // 1. View specializations index
+    $indexResponse = $this->actingAs($admin)->get('/admin/specializations');
+    $indexResponse->assertStatus(200);
+    $indexResponse->assertSee('Responder Specializations');
+
+    // 2. View create form
+    $createView = $this->actingAs($admin)->get('/admin/specializations/create');
+    $createView->assertStatus(200);
+
+    // 3. Store new specialization
+    $storeResponse = $this->actingAs($admin)->post('/admin/specializations', [
+        'name'        => 'Cryo-Stasis Anomaly Containment',
+        'code_prefix' => 'CRYO',
+        'description' => 'Specialized in thermal suppression of ethereal entities.',
+    ]);
+    $storeResponse->assertRedirect(route('admin.specializations.index'));
+    $this->assertDatabaseHas('specializations', [
+        'name'        => 'Cryo-Stasis Anomaly Containment',
+        'code_prefix' => 'CRYO',
+    ]);
+
+    $spec = \App\Models\Specialization::where('code_prefix', 'CRYO')->first();
+
+    // 4. View edit form
+    $editView = $this->actingAs($admin)->get("/admin/specializations/{$spec->id}/edit");
+    $editView->assertStatus(200);
+    $editView->assertSee('CRYO');
+
+    // 5. Update specialization
+    $updateResponse = $this->actingAs($admin)->put("/admin/specializations/{$spec->id}", [
+        'name'        => 'Cryo-Stasis & Thermal Suppression',
+        'code_prefix' => 'CRYO2',
+        'description' => 'Updated operational profile.',
+    ]);
+    $updateResponse->assertRedirect(route('admin.specializations.index'));
+    $this->assertDatabaseHas('specializations', [
+        'name'        => 'Cryo-Stasis & Thermal Suppression',
+        'code_prefix' => 'CRYO2',
+    ]);
+
+    // 6. Delete specialization
+    $deleteResponse = $this->actingAs($admin)->delete("/admin/specializations/{$spec->id}");
+    $deleteResponse->assertRedirect();
+    $this->assertDatabaseMissing('specializations', [
+        'id' => $spec->id,
+    ]);
+});

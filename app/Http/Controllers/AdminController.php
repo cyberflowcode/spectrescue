@@ -9,6 +9,7 @@ use App\Models\IncidentType;
 use App\Models\Response;
 use App\Models\Notification;
 use App\Models\SystemSetting;
+use App\Models\Specialization;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -185,7 +186,8 @@ class AdminController extends Controller
      */
     public function createUser()
     {
-        return view('admin.users.create');
+        $specializations = Specialization::where('is_active', true)->orderBy('name')->get();
+        return view('admin.users.create', compact('specializations'));
     }
 
     /**
@@ -299,7 +301,8 @@ class AdminController extends Controller
     public function editUser(User $user)
     {
         $user->load('responderProfile');
-        return view('admin.users.edit', compact('user'));
+        $specializations = Specialization::orderBy('name')->get();
+        return view('admin.users.edit', compact('user', 'specializations'));
     }
 
     /**
@@ -536,5 +539,97 @@ class AdminController extends Controller
         $incidentType->delete();
 
         return back()->with('success', "Phenomenon classification '{$name}' deleted successfully.");
+    }
+
+    /**
+     * Display a listing of all Responder Specializations.
+     */
+    public function specializations()
+    {
+        $specializations = Specialization::withCount('responders')
+            ->orderBy('name')
+            ->paginate(15);
+
+        return view('admin.specializations.index', compact('specializations'));
+    }
+
+    /**
+     * Show the form for creating a new Responder Specialization.
+     */
+    public function createSpecialization()
+    {
+        return view('admin.specializations.create');
+    }
+
+    /**
+     * Store a newly created Responder Specialization in storage.
+     */
+    public function storeSpecialization(Request $request)
+    {
+        $data = $request->validate([
+            'name'        => ['required', 'string', 'max:191', 'unique:specializations,name'],
+            'code_prefix' => ['required', 'string', 'max:10', 'regex:/^[A-Z0-9]+$/i'],
+            'description' => ['nullable', 'string', 'max:1000'],
+        ], [
+            'code_prefix.regex' => 'The code prefix must contain letters or numbers only (e.g. EXO, GHT, CLR).',
+        ]);
+
+        $data['code_prefix'] = strtoupper($data['code_prefix']);
+        Specialization::create($data);
+
+        return redirect()->route('admin.specializations.index')
+            ->with('success', "Specialization '{$data['name']}' created successfully.");
+    }
+
+    /**
+     * Show the form for editing an existing Responder Specialization.
+     */
+    public function editSpecialization(Specialization $specialization)
+    {
+        $specialization->loadCount('responders');
+        return view('admin.specializations.edit', compact('specialization'));
+    }
+
+    /**
+     * Update the specified Responder Specialization in storage.
+     */
+    public function updateSpecialization(Request $request, Specialization $specialization)
+    {
+        $data = $request->validate([
+            'name'        => ['required', 'string', 'max:191', Rule::unique('specializations', 'name')->ignore($specialization->id)],
+            'code_prefix' => ['required', 'string', 'max:10', 'regex:/^[A-Z0-9]+$/i'],
+            'description' => ['nullable', 'string', 'max:1000'],
+        ], [
+            'code_prefix.regex' => 'The code prefix must contain letters or numbers only (e.g. EXO, GHT, CLR).',
+        ]);
+
+        $data['code_prefix'] = strtoupper($data['code_prefix']);
+        $oldName = $specialization->name;
+        $specialization->update($data);
+
+        // Keep existing responders updated if name was altered
+        if ($oldName !== $data['name']) {
+            Responder::where('specialization', $oldName)->update(['specialization' => $data['name']]);
+        }
+
+        return redirect()->route('admin.specializations.index')
+            ->with('success', "Specialization '{$specialization->name}' updated successfully.");
+    }
+
+    /**
+     * Remove the specified Responder Specialization from storage.
+     */
+    public function destroySpecialization(Specialization $specialization)
+    {
+        $count = Responder::where('specialization', $specialization->name)->count();
+
+        if ($count > 0) {
+            return back()->with('error', "Cannot delete '{$specialization->name}' because {$count} registered responder(s) are assigned to it.");
+        }
+
+        $name = $specialization->name;
+        $specialization->delete();
+
+        return back()->with('success', "Specialization '{$name}' deleted successfully.");
     }
 }

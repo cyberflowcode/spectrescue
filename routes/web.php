@@ -130,6 +130,14 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->as('admin.')->group(
     Route::put('/incident-types/{incidentType}',      [AdminController::class, 'updateIncidentType'])->name('incident_types.update');
     Route::delete('/incident-types/{incidentType}',   [AdminController::class, 'destroyIncidentType'])->name('incident_types.destroy');
 
+    // Responder Specializations CRUD
+    Route::get('/specializations',                          [AdminController::class, 'specializations'])->name('specializations.index');
+    Route::get('/specializations/create',                   [AdminController::class, 'createSpecialization'])->name('specializations.create');
+    Route::post('/specializations',                         [AdminController::class, 'storeSpecialization'])->name('specializations.store');
+    Route::get('/specializations/{specialization}/edit',    [AdminController::class, 'editSpecialization'])->name('specializations.edit');
+    Route::put('/specializations/{specialization}',         [AdminController::class, 'updateSpecialization'])->name('specializations.update');
+    Route::delete('/specializations/{specialization}',      [AdminController::class, 'destroySpecialization'])->name('specializations.destroy');
+
     // System Settings
     Route::get('/settings',  [AdminController::class, 'settings'])->name('settings.index');
     Route::post('/settings', [AdminController::class, 'updateSettings'])->name('settings.update');

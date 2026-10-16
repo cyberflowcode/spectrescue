@@ -138,10 +138,10 @@ class CitizenController extends Controller
             abort(403, 'You are not authorized to edit this incident report.');
         }
 
-        // Prevent editing if the incident has already been resolved and closed
-        if ($incident->status === 'Resolved') {
+        // Prevent editing if the incident is no longer pending (Dispatched, Responding, or Resolved)
+        if ($incident->status !== 'Pending' && !Auth::user()->isAdmin()) {
             return redirect()->route('citizen.incidents.show', $incident->id)
-                ->with('error', 'This emergency incident has already been resolved and archived. It can no longer be edited.');
+                ->with('error', "This emergency report is currently {$incident->status} and cannot be edited. Only pending reports can be modified.");
         }
 
         $incidentTypes = IncidentType::all();
@@ -160,9 +160,10 @@ class CitizenController extends Controller
             abort(403, 'You are not authorized to update this incident report.');
         }
 
-        if ($incident->status === 'Resolved') {
+        // Prevent updating if the incident is no longer pending (Dispatched, Responding, or Resolved)
+        if ($incident->status !== 'Pending' && !Auth::user()->isAdmin()) {
             return redirect()->route('citizen.incidents.show', $incident->id)
-                ->with('error', 'Resolved incident reports cannot be modified.');
+                ->with('error', "This emergency report is currently {$incident->status} and cannot be modified. Only pending reports can be modified.");
         }
 
         // 1. Validate updated inputs
@@ -223,10 +224,10 @@ class CitizenController extends Controller
             abort(403, 'You are not authorized to delete evidence from this incident.');
         }
 
-        // 3. Do not allow deletion if the incident has already been resolved
-        if ($incident->status === 'Resolved') {
+        // 3. Do not allow deletion if the incident is no longer pending
+        if ($incident->status !== 'Pending' && !Auth::user()->isAdmin()) {
             return redirect()->route('citizen.incidents.show', $incident->id)
-                ->with('error', 'Resolved incident reports cannot be modified.');
+                ->with('error', "Evidence cannot be removed from an emergency report that is {$incident->status}.");
         }
 
         // 4. Delete the physical file from storage if it exists

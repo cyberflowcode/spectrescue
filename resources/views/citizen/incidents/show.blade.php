@@ -15,7 +15,7 @@
             <span class="text-xs font-mono text-cyan-400 font-bold">{{ $incident->tracking_code }}</span>
         </div>
         <div class="flex flex-wrap items-center gap-2">
-            @if($incident->status !== 'Resolved')
+            @if($incident->status === 'Pending')
                 <a href="{{ route('citizen.incidents.edit', $incident->id) }}"
                     class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold font-mono bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/40 transition-all shadow-sm shadow-cyan-950/20 hover:-translate-y-0.5">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -181,7 +181,7 @@
                                 </p>
                             </div>
                         </div>
-                        @if($incident->status !== 'Resolved')
+                        @if($incident->status === 'Pending')
                             <div class="pt-1">
                                 <a href="{{ route('citizen.incidents.edit', $incident->id) }}"
                                     class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 shadow transition-colors">
@@ -331,7 +331,7 @@
                                 No anomaly photos or documents were provided during report intake.
                             </p>
                         </div>
-                        @if($incident->status !== 'Resolved')
+                        @if($incident->status === 'Pending')
                             <div class="pt-1">
                                 <a href="{{ route('citizen.incidents.edit', $incident->id) }}"
                                    class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/40 transition-colors">

@@ -692,3 +692,75 @@ test('admin can inspect emergency incidents from recent emergency activity', fun
     $dispatcherInspectResponse->assertSee($incident->tracking_code);
 });
 
+test('citizen can edit report if pending, but cannot edit if dispatched, responding, or resolved', function () {
+    $citizen = User::where('role', 'citizen')->first();
+    $incidentType = IncidentType::first();
+
+    // Create a fresh test incident owned by this citizen
+    $incident = Incident::create([
+        'citizen_id'       => $citizen->id,
+        'incident_type_id' => $incidentType->id,
+        'tracking_code'    => 'PAR-TEST-EDIT01',
+        'title'            => 'Initial Anomaly Alert',
+        'description'      => 'Shadow lurking in kitchen.',
+        'location_address' => '77 Ghost Lane',
+        'location_city'    => 'Quezon City',
+        'threat_level'     => 'Low',
+        'status'           => 'Pending',
+    ]);
+
+    // 1. Pending: Citizen can access edit page and see Edit button
+    $editGetPending = $this->actingAs($citizen)->get(route('citizen.incidents.edit', $incident->id));
+    $editGetPending->assertStatus(200);
+    $editGetPending->assertSee('Initial Anomaly Alert');
+
+    $showPending = $this->actingAs($citizen)->get(route('citizen.incidents.show', $incident->id));
+    $showPending->assertSee(route('citizen.incidents.edit', $incident->id));
+
+    // 2. Dispatched: Citizen cannot access edit page or update
+    $incident->update(['status' => 'Dispatched']);
+
+    $editGetDispatched = $this->actingAs($citizen)->get(route('citizen.incidents.edit', $incident->id));
+    $editGetDispatched->assertRedirect(route('citizen.incidents.show', $incident->id));
+    $editGetDispatched->assertSessionHas('error');
+
+    $updateDispatched = $this->actingAs($citizen)->put(route('citizen.incidents.update', $incident->id), [
+        'incident_type_id' => $incidentType->id,
+        'title'            => 'Attempted Dispatched Modification',
+        'description'      => 'Should not work',
+        'location_address' => '77 Ghost Lane',
+        'location_city'    => 'Quezon City',
+        'threat_level'     => 'High',
+    ]);
+    $updateDispatched->assertRedirect(route('citizen.incidents.show', $incident->id));
+    $updateDispatched->assertSessionHas('error');
+
+    $showDispatched = $this->actingAs($citizen)->get(route('citizen.incidents.show', $incident->id));
+    $showDispatched->assertDontSee(route('citizen.incidents.edit', $incident->id));
+
+    // 3. Responding: Citizen cannot access edit page or update
+    $incident->update(['status' => 'Responding']);
+
+    $editGetResponding = $this->actingAs($citizen)->get(route('citizen.incidents.edit', $incident->id));
+    $editGetResponding->assertRedirect(route('citizen.incidents.show', $incident->id));
+    $editGetResponding->assertSessionHas('error');
+
+    $showResponding = $this->actingAs($citizen)->get(route('citizen.incidents.show', $incident->id));
+    $showResponding->assertDontSee(route('citizen.incidents.edit', $incident->id));
+
+    // 4. Resolved: Citizen cannot access edit page or update
+    $incident->update(['status' => 'Resolved']);
+
+    $editGetResolved = $this->actingAs($citizen)->get(route('citizen.incidents.edit', $incident->id));
+    $editGetResolved->assertRedirect(route('citizen.incidents.show', $incident->id));
+    $editGetResolved->assertSessionHas('error');
+
+    $showResolved = $this->actingAs($citizen)->get(route('citizen.incidents.show', $incident->id));
+    $showResolved->assertDontSee(route('citizen.incidents.edit', $incident->id));
+
+    // Ensure title was never modified while not pending
+    $incident->refresh();
+    expect($incident->title)->toBe('Initial Anomaly Alert');
+});
+
+

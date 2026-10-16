@@ -113,7 +113,7 @@
                             </td>
                             <td class="py-4 px-6 text-right align-middle whitespace-nowrap">
                                 <div class="flex items-center justify-end space-x-2">
-                                    @if($incident->status !== 'Resolved')
+                                    @if($incident->status === 'Pending')
                                         <a href="{{ route('citizen.incidents.edit', $incident->id) }}"
                                             class="inline-flex items-center px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors"
                                             title="Edit report and coordinates">
@@ -158,7 +158,7 @@
                             @endif
                         </div>
                         <div class="flex items-center space-x-1.5">
-                            @if($incident->status !== 'Resolved')
+                            @if($incident->status === 'Pending')
                                 <a href="{{ route('citizen.incidents.edit', $incident->id) }}"
                                     class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700">
                                     Edit

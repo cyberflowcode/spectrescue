@@ -142,7 +142,10 @@ class AuthController extends Controller
      */
     public function showResponderRegister()
     {
-        $specializations = Specialization::where('is_active', true)->orderBy('name')->get();
+        $specializations = \Illuminate\Support\Facades\Schema::hasTable('specializations')
+            ? Specialization::where('is_active', true)->orderBy('name')->get()
+            : collect();
+
         return view('auth.register-responder', compact('specializations'));
     }
 

@@ -186,7 +186,9 @@ class AdminController extends Controller
      */
     public function createUser()
     {
-        $specializations = Specialization::where('is_active', true)->orderBy('name')->get();
+        $specializations = \Illuminate\Support\Facades\Schema::hasTable('specializations')
+            ? Specialization::where('is_active', true)->orderBy('name')->get()
+            : collect();
         return view('admin.users.create', compact('specializations'));
     }
 
@@ -301,7 +303,9 @@ class AdminController extends Controller
     public function editUser(User $user)
     {
         $user->load('responderProfile');
-        $specializations = Specialization::orderBy('name')->get();
+        $specializations = \Illuminate\Support\Facades\Schema::hasTable('specializations')
+            ? Specialization::orderBy('name')->get()
+            : collect();
         return view('admin.users.edit', compact('user', 'specializations'));
     }
 

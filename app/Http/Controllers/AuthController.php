@@ -8,6 +8,7 @@ use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller
 {
@@ -34,28 +35,56 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        $remember = $request->boolean('remember');
+        $user = User::where('email', $credentials['email'])->first();
 
-        // 2. Attempt to log the user in
-        if (Auth::attempt($credentials, $remember)) {
-            $request->session()->regenerate();
-
-            // 2b. Block deactivated accounts from logging in
-            if (!Auth::user()->isActive()) {
-                Auth::logout();
-                return back()->withErrors([
-                    'email' => 'Your account has been deactivated. Please contact the administrator.',
-                ]);
-            }
-
-            return $this->redirectBasedOnRole(Auth::user())
-                ->with('success', 'Welcome back, ' . Auth::user()->name . '!');
+        // 2. Check credentials
+        if (!$user || !Hash::check($credentials['password'], $user->password)) {
+            return back()->withInput($request->only('email'))->withErrors([
+                'email' => 'The provided credentials do not match our records.',
+            ]);
         }
 
-        // 3. Return with error if login fails
-        return back()->withInput($request->only('email'))->withErrors([
-            'email' => 'The provided credentials do not match our records.',
-        ]);
+        // 3. Block deactivated accounts
+        if (!$user->isActive()) {
+            return back()->withInput($request->only('email'))->withErrors([
+                'email' => 'Your account has been deactivated. Please contact the administrator.',
+            ]);
+        }
+
+        // 4. Single-Device Session Check:
+        // Detect if this account already has an active session on another device/browser
+        $sessionLifetime = config('session.lifetime', 120);
+        $activeThreshold = now()->subMinutes($sessionLifetime)->getTimestamp();
+        $currentSessionId = $request->session()->getId();
+
+        $hasActiveSession = DB::table('sessions')
+            ->where('user_id', $user->id)
+            ->where('id', '!=', $currentSessionId)
+            ->where('last_activity', '>=', $activeThreshold)
+            ->exists();
+
+        // If user chose to terminate other sessions, clear them out
+        if ($request->boolean('force_logout')) {
+            DB::table('sessions')
+                ->where('user_id', $user->id)
+                ->where('id', '!=', $currentSessionId)
+                ->delete();
+            $hasActiveSession = false;
+        }
+
+        // If an active session exists on another device, block this new login attempt
+        if ($hasActiveSession) {
+            return back()->withInput($request->only('email'))->withErrors([
+                'session_blocked' => 'This account is currently logged in on another device. Simultaneous logins are disabled for security.',
+            ])->with('can_force_logout', true);
+        }
+
+        // 5. Log the user in
+        Auth::login($user, $request->boolean('remember'));
+        $request->session()->regenerate();
+
+        return $this->redirectBasedOnRole($user)
+            ->with('success', 'Welcome back, ' . $user->name . '!');
     }
 
     /**
@@ -161,7 +190,15 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
+        $sessionId = $request->session()->getId();
+
         Auth::logout();
+
+        // Remove the session from database to immediately release the device lock
+        if ($sessionId) {
+            DB::table('sessions')->where('id', $sessionId)->delete();
+        }
+
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 

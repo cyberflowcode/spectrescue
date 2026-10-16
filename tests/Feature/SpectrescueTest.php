@@ -446,5 +446,42 @@ test('admin can create, update, and delete phenomenon classifications', function
     $this->assertDatabaseMissing('incident_types', ['id' => $type->id]);
 });
 
+test('single device login restriction blocks concurrent logins on other devices', function () {
+    $citizen = User::where('role', 'citizen')->first();
+
+    // 1. Simulate an existing active session on Device A
+    \Illuminate\Support\Facades\DB::table('sessions')->insert([
+        'id'            => 'device-a-session-id',
+        'user_id'       => $citizen->id,
+        'ip_address'    => '192.168.1.10',
+        'user_agent'    => 'Device A Browser',
+        'payload'       => serialize([]),
+        'last_activity' => now()->timestamp,
+    ]);
+
+    // 2. Attempt login on Device B with the same user credentials -> MUST BE BLOCKED
+    $response = $this->post('/login', [
+        'email'    => $citizen->email,
+        'password' => 'password',
+    ]);
+
+    $response->assertSessionHasErrors(['session_blocked']);
+    $this->assertGuest();
+
+    // 3. Attempt login with force_logout=1 -> MUST SUCCEED and terminate Device A
+    $forceResponse = $this->post('/login', [
+        'email'        => $citizen->email,
+        'password'     => 'password',
+        'force_logout' => 1,
+    ]);
+
+    $forceResponse->assertRedirect(route('citizen.dashboard'));
+    $this->assertAuthenticatedAs($citizen);
+
+    // Device A's session should now be deleted from sessions table
+    $this->assertDatabaseMissing('sessions', ['id' => 'device-a-session-id']);
+});
+
+
 
 

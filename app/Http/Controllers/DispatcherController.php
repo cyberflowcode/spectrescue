@@ -145,12 +145,21 @@ class DispatcherController extends Controller
         ]);
 
         // 9. Notify the citizen who reported the incident
-        Notification::create([
+        $citizenNotif = Notification::create([
             'user_id' => $incident->citizen_id,
             'title'   => "Responder Dispatched: {$incident->tracking_code}",
             'message' => "{$responder->user->name} ({$responder->specialization}) has been dispatched to your location.",
             'link'    => route('citizen.incidents.show', $incident->id),
         ]);
+
+        try {
+            broadcast(new \App\Events\NotificationSent($citizenNotif));
+        } catch (\Throwable $e) {}
+
+        // 10. Broadcast Real-Time Incident Status & Assignment update
+        try {
+            broadcast(new \App\Events\IncidentStatusUpdated($incident));
+        } catch (\Throwable $e) {}
 
         return redirect()->route('dispatcher.incidents.show', $incident->id)
             ->with('success', "Responder {$responder->user->name} successfully dispatched to this emergency!");
@@ -176,6 +185,11 @@ class DispatcherController extends Controller
         // Return incident back to Pending
         $incident->update(['status' => 'Pending']);
 
+        // Broadcast Real-Time Incident Status update
+        try {
+            broadcast(new \App\Events\IncidentStatusUpdated($incident));
+        } catch (\Throwable $e) {}
+
         return redirect()->route('dispatcher.incidents.show', $incident->id)
             ->with('info', 'Deployment recalled. The incident is now back in Pending status and you may assign a different available specialist.');
     }
@@ -190,6 +204,11 @@ class DispatcherController extends Controller
         ]);
 
         $incident->update(['threat_level' => $data['threat_level']]);
+
+        // Broadcast Real-Time Incident Status update
+        try {
+            broadcast(new \App\Events\IncidentStatusUpdated($incident));
+        } catch (\Throwable $e) {}
 
         return back()->with('success', "Threat level updated to {$data['threat_level']}.");
     }

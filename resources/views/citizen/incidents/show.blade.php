@@ -73,7 +73,7 @@
                 </div>
 
                 <!-- Step 2: Dispatched -->
-                <div class="p-3 rounded-xl border 
+                <div class="p-3 rounded-xl border
                     @if(in_array($incident->status, ['Dispatched', 'Responding', 'Resolved'])) bg-emerald-500/10 border-emerald-500/40 text-emerald-300
                     @else bg-slate-950 border-slate-800 text-slate-500 @endif">
                     <div class="w-6 h-6 rounded-full font-bold text-xs flex items-center justify-center mx-auto mb-1
@@ -86,7 +86,7 @@
                 </div>
 
                 <!-- Step 3: Responding -->
-                <div class="p-3 rounded-xl border 
+                <div class="p-3 rounded-xl border
                     @if(in_array($incident->status, ['Responding', 'Resolved'])) bg-emerald-500/10 border-emerald-500/40 text-emerald-300
                     @elseif($incident->status === 'Dispatched') bg-cyan-500/10 border-cyan-500/40 text-cyan-300 animate-pulse
                     @else bg-slate-950 border-slate-800 text-slate-500 @endif">
@@ -101,7 +101,7 @@
                 </div>
 
                 <!-- Step 4: Resolved -->
-                <div class="p-3 rounded-xl border 
+                <div class="p-3 rounded-xl border
                     @if($incident->status === 'Resolved') bg-emerald-500/10 border-emerald-500/40 text-emerald-300
                     @else bg-slate-950 border-slate-800 text-slate-500 @endif">
                     <div class="w-6 h-6 rounded-full font-bold text-xs flex items-center justify-center mx-auto mb-1
@@ -446,8 +446,10 @@
     .leaflet-popup-tip { background: #0f172a !important; }
 </style>
 @endpush
+@endif
 
 @push('scripts')
+@if($incident->hasCoordinates())
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -472,5 +474,32 @@
         `).openPopup();
     });
 </script>
-@endpush
 @endif
+
+<script>
+    // Real-time Incident Status Updates via Laravel Echo / WebSockets
+    document.addEventListener('DOMContentLoaded', function() {
+        if (window.Echo) {
+            window.Echo.channel('incident.{{ $incident->id }}')
+                .listen('.IncidentStatusUpdated', function(event) {
+                    handleLiveStatusUpdate(event.incident || event);
+                })
+                .listen('IncidentStatusUpdated', function(event) {
+                    handleLiveStatusUpdate(event.incident || event);
+                });
+        }
+
+        function handleLiveStatusUpdate(inc) {
+            if (typeof showLiveToast === 'function') {
+                showLiveToast(
+                    '⚡ EMERGENCY STATUS UPDATED',
+                    'Tracking ' + (inc.tracking_code || '{{ $incident->tracking_code }}') + ' is now ' + (inc.status || 'Updated') + '. Syncing response pipeline...'
+                );
+            }
+            setTimeout(function() {
+                window.location.reload();
+            }, 1200);
+        }
+    });
+</script>
+@endpush

@@ -138,6 +138,10 @@ class AdminController extends Controller
 
         $incident->update(['status' => $data['status']]);
 
+        try {
+            broadcast(new \App\Events\IncidentStatusUpdated($incident));
+        } catch (\Throwable $e) {}
+
         return back()->with('success', "Incident {$incident->tracking_code} status updated to {$data['status']}.");
     }
 
@@ -423,13 +427,17 @@ class AdminController extends Controller
 
         // Create one notification per recipient
         foreach ($userIds as $userId) {
-            Notification::create([
+            $notif = Notification::create([
                 'user_id' => $userId,
                 'title'   => $title,
                 'message' => $request->message,
                 'link'    => $request->link ?? null,
                 'is_read' => false,
             ]);
+
+            try {
+                broadcast(new \App\Events\NotificationSent($notif));
+            } catch (\Throwable $e) {}
         }
 
         $count = $userIds->count();

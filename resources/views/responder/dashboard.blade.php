@@ -236,3 +236,30 @@
 
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    // Real-time mission dispatch listener for specialists
+    document.addEventListener('DOMContentLoaded', function() {
+        if (window.Echo) {
+            window.Echo.channel('user.{{ Auth::id() }}')
+                .listen('.NotificationSent', function(event) {
+                    handleResponderLiveAlert(event.notification || event);
+                })
+                .listen('NotificationSent', function(event) {
+                    handleResponderLiveAlert(event.notification || event);
+                });
+        }
+
+        function handleResponderLiveAlert(notif) {
+            if (typeof showLiveToast === 'function') {
+                showLiveToast(notif.title || 'Mission Dispatch Alert', notif.message || 'Incoming dispatch directive.', notif.link);
+            }
+            // If assigned to a new mission, reload dashboard to reveal active mission card
+            setTimeout(function() {
+                window.location.reload();
+            }, 1500);
+        }
+    });
+</script>
+@endpush

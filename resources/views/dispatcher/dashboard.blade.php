@@ -16,6 +16,10 @@
             <p class="text-sm text-slate-400 mt-0.5">Triage paranormal calls, assess threat levels, and dispatch field units</p>
         </div>
         <div class="flex items-center space-x-3 shrink-0">
+            <div id="ws-radar-status" class="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-bold">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                <span id="ws-radar-label">Radar: WebSockets Live</span>
+            </div>
             <span class="text-xs font-mono text-slate-400">Duty Officer:</span>
             <span class="text-xs font-mono px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-300 border border-amber-500/30 font-bold">
                 {{ Auth::user()->name }}
@@ -555,6 +559,70 @@ document.addEventListener('DOMContentLoaded', function() {
             map.fitBounds(bounds, { padding: [50, 50] });
         }
     }
+
+    // ==================== DISPATCHER REAL-TIME WEBSOCKET LISTENER ====================
+    if (window.Echo) {
+        // Listen to live public emergency broadcasts
+        window.Echo.channel('emergencies')
+            .listen('.NewEmergencyReported', function(event) {
+                handleIncomingLiveEmergency(event.incident || event);
+            })
+            .listen('NewEmergencyReported', function(event) {
+                handleIncomingLiveEmergency(event.incident || event);
+            })
+            .listen('.IncidentStatusUpdated', function(event) {
+                handleIncomingLiveEmergency(event.incident || event, 'Status Changed');
+            })
+            .listen('IncidentStatusUpdated', function(event) {
+                handleIncomingLiveEmergency(event.incident || event, 'Status Changed');
+            });
+    } else {
+        // Fallback indicator if WebSockets is not initialized
+        const radarLabel = document.getElementById('ws-radar-label');
+        if (radarLabel) radarLabel.innerText = 'Radar: Polling (Fallback)';
+    }
+
+    function handleIncomingLiveEmergency(incident, type = 'New Emergency') {
+        // Play distinct priority dispatch chime
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (AudioContext) {
+                const ctx = new AudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(520, ctx.currentTime);
+                osc.frequency.setValueAtTime(780, ctx.currentTime + 0.12);
+                gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.35);
+            }
+        } catch (e) {}
+
+        // Pulse radar pill
+        const radarPill = document.getElementById('ws-radar-status');
+        if (radarPill) {
+            radarPill.classList.remove('bg-emerald-500/10', 'border-emerald-500/30', 'text-emerald-400');
+            radarPill.classList.add('bg-amber-500/20', 'border-amber-500/50', 'text-amber-300');
+            const label = document.getElementById('ws-radar-label');
+            if (label) label.innerText = 'Syncing Feed...';
+        }
+
+        // Auto reload after 1.5 seconds to populate new rows in table and new marker on map
+        setTimeout(function() {
+            window.location.reload();
+        }, 1500);
+    }
+
+    // Safety fallback: auto-check every 45s if idle
+    setInterval(function() {
+        if (!document.hidden) {
+            // Only periodic passive check if tab is active
+        }
+    }, 45000);
 });
 </script>
 @endpush

@@ -101,13 +101,22 @@ class CitizenController extends Controller
         // 5. Notify all active dispatchers
         $dispatchers = User::where('role', 'dispatcher')->get();
         foreach ($dispatchers as $dispatcher) {
-            Notification::create([
+            $notif = Notification::create([
                 'user_id' => $dispatcher->id,
                 'title'   => "New Emergency: [{$incident->threat_level}] {$incident->tracking_code}",
                 'message' => "Incident reported at {$incident->location_address}: {$incident->title}",
                 'link'    => route('dispatcher.incidents.show', $incident->id),
             ]);
+
+            try {
+                broadcast(new \App\Events\NotificationSent($notif));
+            } catch (\Throwable $e) {}
         }
+
+        // 6. Broadcast Real-Time WebSocket event to dispatchers and active monitors
+        try {
+            broadcast(new \App\Events\NewEmergencyReported($incident));
+        } catch (\Throwable $e) {}
 
         return redirect()->route('citizen.incidents.show', $incident->id)
             ->with('success', "Emergency report submitted successfully! Tracking Code: {$incident->tracking_code}");

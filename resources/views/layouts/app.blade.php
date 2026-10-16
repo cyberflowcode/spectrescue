@@ -650,7 +650,137 @@
             });
         }
     }, 6000);
+
+    // ==================== REAL-TIME WEBSOCKET NOTIFICATION ENGINE ====================
+    // Web Audio Synthesizer for instant audible alert (student-friendly, no external audio file needed)
+    function playTacticalChime(frequency = 880, duration = 0.15) {
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) return;
+            const ctx = new AudioContext();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(frequency, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(frequency * 1.5, ctx.currentTime + duration);
+
+            gain.gain.setValueAtTime(0.15, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            osc.start();
+            osc.stop(ctx.currentTime + duration);
+        } catch (e) {
+            // Audio policy fallback
+        }
+    }
+
+    // Live Toast Notification Builder
+    function showLiveToast(title, message, link = null) {
+        playTacticalChime(950, 0.2);
+
+        const container = document.getElementById('live-toast-container');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = 'pointer-events-auto flex items-start space-x-3 p-4 rounded-xl bg-slate-900/95 border border-cyan-500/50 shadow-2xl shadow-cyan-950/60 backdrop-blur-md transform transition-all duration-300 translate-y-4 opacity-0 text-white';
+        
+        let linkHtml = link ? `<a href="${link}" class="inline-block mt-2 text-xs font-mono font-bold text-cyan-400 hover:text-cyan-300 underline">View Incident &rarr;</a>` : '';
+
+        toast.innerHTML = `
+            <div class="w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center shrink-0 text-cyan-400">
+                <svg class="w-4 h-4 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+            </div>
+            <div class="flex-1 min-w-0 pr-2">
+                <div class="flex items-center space-x-2">
+                    <span class="text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider">Live Broadcast</span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                </div>
+                <div class="text-sm font-bold text-white mt-0.5 truncate">${title}</div>
+                <div class="text-xs text-slate-300 mt-0.5 line-clamp-2">${message}</div>
+                ${linkHtml}
+            </div>
+            <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-white text-lg leading-none shrink-0">&times;</button>
+        `;
+
+        container.appendChild(toast);
+
+        // Animate entrance
+        requestAnimationFrame(() => {
+            toast.classList.remove('translate-y-4', 'opacity-0');
+        });
+
+        // Increment Bell Counter Dynamically
+        const bell = document.getElementById('notif-bell');
+        if (bell) {
+            let badge = bell.querySelector('span');
+            if (badge) {
+                let count = parseInt(badge.innerText) || 0;
+                badge.innerText = count + 1 > 9 ? '9+' : (count + 1);
+            } else {
+                badge = document.createElement('span');
+                badge.className = 'absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white leading-none animate-bounce';
+                badge.innerText = '1';
+                bell.appendChild(badge);
+            }
+        }
+
+        // Auto remove after 7 seconds
+        setTimeout(() => {
+            toast.style.transition = 'opacity 0.4s, transform 0.4s';
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(10px)';
+            setTimeout(() => toast.remove(), 400);
+        }, 7000);
+    }
+
+    // Connect WebSocket Listeners once Echo is initialized
+    document.addEventListener('DOMContentLoaded', function() {
+        if (window.Echo) {
+            @auth
+                // Listen for personal notifications sent to this specific user
+                window.Echo.channel('user.{{ Auth::id() }}')
+                    .listen('.NotificationSent', function(event) {
+                        const notif = event.notification || event;
+                        showLiveToast(notif.title || 'Mission Alert', notif.message || 'You have a new update.', notif.link);
+                    })
+                    .listen('NotificationSent', function(event) {
+                        const notif = event.notification || event;
+                        showLiveToast(notif.title || 'Mission Alert', notif.message || 'You have a new update.', notif.link);
+                    });
+
+                @if(Auth::user()->isDispatcher() || Auth::user()->isAdmin())
+                    // Real-time Emergency Alert Feed for Dispatchers & HQ Admins
+                    window.Echo.channel('emergencies')
+                        .listen('.NewEmergencyReported', function(event) {
+                            const inc = event.incident || event;
+                            showLiveToast(
+                                '🚨 NEW EMERGENCY: ' + (inc.tracking_code || 'SPECTRE-ALERT'),
+                                (inc.title || 'New anomaly reported') + ' in ' + (inc.location_city || 'sector'),
+                                '/dispatcher/incidents/' + inc.id
+                            );
+                        })
+                        .listen('NewEmergencyReported', function(event) {
+                            const inc = event.incident || event;
+                            showLiveToast(
+                                '🚨 NEW EMERGENCY: ' + (inc.tracking_code || 'SPECTRE-ALERT'),
+                                (inc.title || 'New anomaly reported') + ' in ' + (inc.location_city || 'sector'),
+                                '/dispatcher/incidents/' + inc.id
+                            );
+                        });
+                @endif
+            @endauth
+        }
+    });
 </script>
+
+{{-- Floating Live Toast Container --}}
+<div id="live-toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-3 pointer-events-none max-w-sm w-full"></div>
 
 @stack('scripts')
 </body>

@@ -99,7 +99,7 @@ class ResponderController extends Controller
             $incident->update(['status' => 'Responding']);
 
             // Notify citizen
-            Notification::create([
+            $citNotif = Notification::create([
                 'user_id' => $incident->citizen_id,
                 'title'   => "Responder En Route: {$incident->tracking_code}",
                 'message' => "{$responder->user->name} has accepted your emergency call and is currently responding.",
@@ -107,12 +107,18 @@ class ResponderController extends Controller
             ]);
 
             // Notify dispatcher
-            Notification::create([
+            $dispNotif = Notification::create([
                 'user_id' => $assignment->dispatcher_id,
                 'title'   => "Mission Accepted: {$incident->tracking_code}",
                 'message' => "Responder {$responder->user->name} accepted assignment for {$incident->title}.",
                 'link'    => route('dispatcher.incidents.show', $incident->id),
             ]);
+
+            try {
+                broadcast(new \App\Events\NotificationSent($citNotif));
+                broadcast(new \App\Events\NotificationSent($dispNotif));
+                broadcast(new \App\Events\IncidentStatusUpdated($incident));
+            } catch (\Throwable $e) {}
 
             return back()->with('success', 'Emergency assignment accepted! Proceed to containment location.');
         } else {
@@ -129,12 +135,17 @@ class ResponderController extends Controller
             $incident->update(['status' => 'Pending']);
 
             // Notify dispatcher
-            Notification::create([
+            $dispNotif = Notification::create([
                 'user_id' => $assignment->dispatcher_id,
                 'title'   => "Assignment Declined: {$incident->tracking_code}",
                 'message' => "{$responder->user->name} declined assignment. Incident has been returned to the Pending queue.",
                 'link'    => route('dispatcher.incidents.show', $incident->id),
             ]);
+
+            try {
+                broadcast(new \App\Events\NotificationSent($dispNotif));
+                broadcast(new \App\Events\IncidentStatusUpdated($incident));
+            } catch (\Throwable $e) {}
 
             return redirect()->route('responder.dashboard')
                 ->with('info', 'You have declined this emergency assignment. The dispatcher has been alerted.');
@@ -207,7 +218,7 @@ class ResponderController extends Controller
         $responder->update(['is_available' => true]);
 
         // 4. Notify Citizen
-        Notification::create([
+        $citNotif = Notification::create([
             'user_id' => $incident->citizen_id,
             'title'   => "Emergency Resolved: {$incident->tracking_code}",
             'message' => "The paranormal incident at your location has been contained and resolved by {$responder->user->name}.",
@@ -215,12 +226,18 @@ class ResponderController extends Controller
         ]);
 
         // 5. Notify Dispatcher
-        Notification::create([
+        $dispNotif = Notification::create([
             'user_id' => $assignment->dispatcher_id,
             'title'   => "Mission Resolved: {$incident->tracking_code}",
             'message' => "{$responder->user->name} has submitted the containment report for {$incident->tracking_code}.",
             'link'    => route('dispatcher.incidents.show', $incident->id),
         ]);
+
+        try {
+            broadcast(new \App\Events\NotificationSent($citNotif));
+            broadcast(new \App\Events\NotificationSent($dispNotif));
+            broadcast(new \App\Events\IncidentStatusUpdated($incident));
+        } catch (\Throwable $e) {}
 
         return redirect()->route('responder.dashboard')
             ->with('success', "Response report submitted! Incident {$incident->tracking_code} is officially marked as Resolved.");

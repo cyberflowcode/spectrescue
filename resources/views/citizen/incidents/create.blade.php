@@ -43,7 +43,7 @@
                         class="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 text-sm">
                         <option value="">Select Category...</option>
                         @foreach($incidentTypes as $type)
-                            <option value="{{ $type->id }}" {{ old('incident_type_id') == $type->id ? 'selected' : '' }}>
+                            <option value="{{ $type->id }}" data-threat="{{ $type->default_threat_level }}" {{ old('incident_type_id') == $type->id ? 'selected' : '' }}>
                                 {{ $type->name }} (Default Threat: {{ $type->default_threat_level }})
                             </option>
                         @endforeach
@@ -399,6 +399,21 @@
                 evidenceInput.value = '';
                 btnClear.classList.add('hidden');
                 btnClear.classList.remove('inline-flex');
+            });
+        }
+
+        // Auto-select default threat level when a phenomenon classification is picked
+        const incidentTypeSelect = document.getElementById('incident_type_id');
+        if (incidentTypeSelect) {
+            incidentTypeSelect.addEventListener('change', function() {
+                const selectedOption = incidentTypeSelect.options[incidentTypeSelect.selectedIndex];
+                const defaultThreat = selectedOption ? selectedOption.getAttribute('data-threat') : null;
+                if (defaultThreat) {
+                    const radio = document.querySelector(`input[name="threat_level"][value="${defaultThreat}"]`);
+                    if (radio) {
+                        radio.checked = true;
+                    }
+                }
             });
         }
     });

@@ -450,4 +450,85 @@ class AdminController extends Controller
 
         return back()->with('success', 'System settings updated successfully.');
     }
+
+    /**
+     * Display a listing of all Phenomenon Classifications (Incident Types).
+     */
+    public function incidentTypes()
+    {
+        $incidentTypes = IncidentType::withCount('incidents')
+            ->orderBy('name')
+            ->paginate(15);
+
+        return view('admin.incident_types.index', compact('incidentTypes'));
+    }
+
+    /**
+     * Show the form for creating a new Phenomenon Classification.
+     */
+    public function createIncidentType()
+    {
+        return view('admin.incident_types.create');
+    }
+
+    /**
+     * Store a newly created Phenomenon Classification in storage.
+     */
+    public function storeIncidentType(Request $request)
+    {
+        $data = $request->validate([
+            'name'                 => ['required', 'string', 'max:191', 'unique:incident_types,name'],
+            'default_threat_level' => ['required', 'in:Low,Medium,High,Critical'],
+            'description'          => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        IncidentType::create($data);
+
+        return redirect()->route('admin.incident_types.index')
+            ->with('success', "Phenomenon classification '{$data['name']}' created successfully.");
+    }
+
+    /**
+     * Show the form for editing an existing Phenomenon Classification.
+     */
+    public function editIncidentType(IncidentType $incidentType)
+    {
+        $incidentType->loadCount('incidents');
+        return view('admin.incident_types.edit', compact('incidentType'));
+    }
+
+    /**
+     * Update the specified Phenomenon Classification in storage.
+     */
+    public function updateIncidentType(Request $request, IncidentType $incidentType)
+    {
+        $data = $request->validate([
+            'name'                 => ['required', 'string', 'max:191', Rule::unique('incident_types', 'name')->ignore($incidentType->id)],
+            'default_threat_level' => ['required', 'in:Low,Medium,High,Critical'],
+            'description'          => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $incidentType->update($data);
+
+        return redirect()->route('admin.incident_types.index')
+            ->with('success', "Phenomenon classification '{$incidentType->name}' updated successfully.");
+    }
+
+    /**
+     * Remove the specified Phenomenon Classification from storage.
+     */
+    public function destroyIncidentType(IncidentType $incidentType)
+    {
+        // Check if there are any incidents linked to this category
+        $count = $incidentType->incidents()->count();
+
+        if ($count > 0) {
+            return back()->with('error', "Cannot delete '{$incidentType->name}' because {$count} incident(s) are currently categorized under it.");
+        }
+
+        $name = $incidentType->name;
+        $incidentType->delete();
+
+        return back()->with('success', "Phenomenon classification '{$name}' deleted successfully.");
+    }
 }

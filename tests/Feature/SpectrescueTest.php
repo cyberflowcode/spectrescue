@@ -407,6 +407,44 @@ test('admin side flowchart core endpoints are all accessible and functional', fu
 
     // 8. Profile Management
     $this->actingAs($admin)->get('/profile')->assertStatus(200)->assertSee('Profile Settings');
+
+    // 9. Phenomenon Classifications (Incident Types CRUD)
+    $this->actingAs($admin)->get('/admin/incident-types')->assertStatus(200)->assertSee('Phenomenon Classifications');
+    $this->actingAs($admin)->get('/admin/incident-types/create')->assertStatus(200)->assertSee('Add Phenomenon Classification');
 });
+
+test('admin can create, update, and delete phenomenon classifications', function () {
+    $admin = User::where('role', 'admin')->first();
+
+    // 1. Create a new classification
+    $response = $this->actingAs($admin)->post('/admin/incident-types', [
+        'name' => 'Spectral Doppelganger',
+        'default_threat_level' => 'High',
+        'description' => 'Entities that take the form of residents.',
+    ]);
+    $response->assertRedirect('/admin/incident-types');
+    $this->assertDatabaseHas('incident_types', ['name' => 'Spectral Doppelganger']);
+
+    $type = \App\Models\IncidentType::where('name', 'Spectral Doppelganger')->first();
+
+    // 2. Edit the classification
+    $this->actingAs($admin)->get("/admin/incident-types/{$type->id}/edit")
+        ->assertStatus(200)
+        ->assertSee('Spectral Doppelganger');
+
+    $updateResponse = $this->actingAs($admin)->put("/admin/incident-types/{$type->id}", [
+        'name' => 'Spectral Doppelganger Updated',
+        'default_threat_level' => 'Critical',
+        'description' => 'Updated description of mimic entity.',
+    ]);
+    $updateResponse->assertRedirect('/admin/incident-types');
+    $this->assertDatabaseHas('incident_types', ['name' => 'Spectral Doppelganger Updated', 'default_threat_level' => 'Critical']);
+
+    // 3. Delete classification (no incidents assigned)
+    $deleteResponse = $this->actingAs($admin)->delete("/admin/incident-types/{$type->id}");
+    $deleteResponse->assertRedirect();
+    $this->assertDatabaseMissing('incident_types', ['id' => $type->id]);
+});
+
 
 

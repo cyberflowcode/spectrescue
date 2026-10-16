@@ -122,6 +122,14 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->as('admin.')->group(
     Route::get('/notifications',       [AdminController::class, 'notificationsForm'])->name('notifications.index');
     Route::post('/notifications/send', [AdminController::class, 'sendNotification'])->name('notifications.send');
 
+    // Phenomenon Classifications (Incident Types)
+    Route::get('/incident-types',                     [AdminController::class, 'incidentTypes'])->name('incident_types.index');
+    Route::get('/incident-types/create',              [AdminController::class, 'createIncidentType'])->name('incident_types.create');
+    Route::post('/incident-types',                     [AdminController::class, 'storeIncidentType'])->name('incident_types.store');
+    Route::get('/incident-types/{incidentType}/edit', [AdminController::class, 'editIncidentType'])->name('incident_types.edit');
+    Route::put('/incident-types/{incidentType}',      [AdminController::class, 'updateIncidentType'])->name('incident_types.update');
+    Route::delete('/incident-types/{incidentType}',   [AdminController::class, 'destroyIncidentType'])->name('incident_types.destroy');
+
     // System Settings
     Route::get('/settings',  [AdminController::class, 'settings'])->name('settings.index');
     Route::post('/settings', [AdminController::class, 'updateSettings'])->name('settings.update');

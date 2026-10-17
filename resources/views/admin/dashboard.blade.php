@@ -488,3 +488,34 @@
 
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    // Real-time incident updates on Admin HQ Dashboard (Zero Tab Reload)
+    document.addEventListener('DOMContentLoaded', function() {
+        if (window.Echo) {
+            window.Echo.channel('emergencies')
+                .listen('.NewEmergencyReported', function() {
+                    if (typeof spaNavigate === 'function') {
+                        spaNavigate(window.location.href, false);
+                    }
+                })
+                .listen('NewEmergencyReported', function() {
+                    if (typeof spaNavigate === 'function') {
+                        spaNavigate(window.location.href, false);
+                    }
+                })
+                .listen('.IncidentStatusUpdated', function() {
+                    if (typeof spaNavigate === 'function') {
+                        spaNavigate(window.location.href, false);
+                    }
+                })
+                .listen('IncidentStatusUpdated', function() {
+                    if (typeof spaNavigate === 'function') {
+                        spaNavigate(window.location.href, false);
+                    }
+                });
+        }
+    });
+</script>
+@endpush

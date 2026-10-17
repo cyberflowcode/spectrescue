@@ -65,7 +65,7 @@
     @endif
 
     {{-- Stats --}}
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div id="responder-stats-grid" class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="p-5 rounded-2xl bg-slate-900 border border-cyan-500/20 hover:border-cyan-500/40 transition-colors">
             <div class="text-xs uppercase tracking-wider font-mono text-cyan-400">Active Missions</div>
             <div class="text-3xl font-extrabold font-mono text-cyan-300 mt-2 leading-none">{{ $stats['active_missions'] }}</div>
@@ -95,7 +95,7 @@
     </div>
 
     {{-- Active Missions --}}
-    <div class="space-y-4">
+    <div id="responder-active-missions-block" class="space-y-4">
         <div class="flex items-center justify-between">
             <h2 class="text-lg font-bold text-white">
                 Active Missions
@@ -239,7 +239,7 @@
 
 @push('scripts')
 <script>
-    // Real-time mission dispatch listener for specialists
+    // Real-time mission dispatch listener for specialists (Zero Tab Reload)
     document.addEventListener('DOMContentLoaded', function() {
         if (window.Echo) {
             window.Echo.channel('user.{{ Auth::id() }}')
@@ -251,15 +251,41 @@
                 });
         }
 
+        // Silent background refresh: Updates DOM without reloading the tab
+        async function refreshResponderSilently() {
+            try {
+                const response = await fetch(window.location.href, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (!response.ok) return;
+                const html = await response.text();
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+
+                const ids = ['responder-stats-grid', 'responder-active-missions-block'];
+                ids.forEach(id => {
+                    const newEl = doc.getElementById(id);
+                    const curEl = document.getElementById(id);
+                    if (newEl && curEl) curEl.innerHTML = newEl.innerHTML;
+                });
+            } catch (e) {
+                console.warn('Responder mission sync notice:', e);
+            }
+        }
+
         function handleResponderLiveAlert(notif) {
             if (typeof showLiveToast === 'function') {
                 showLiveToast(notif.title || 'Mission Dispatch Alert', notif.message || 'Incoming dispatch directive.', notif.link);
             }
-            // If assigned to a new mission, reload dashboard to reveal active mission card
-            setTimeout(function() {
-                window.location.reload();
-            }, 1500);
+            // Silent DOM update without reloading the tab!
+            refreshResponderSilently();
         }
+
+        // Safety fallback: periodic silent check every 30s without reloading the tab
+        setInterval(function() {
+            if (!document.hidden) {
+                refreshResponderSilently();
+            }
+        }, 30000);
     });
 </script>
 @endpush

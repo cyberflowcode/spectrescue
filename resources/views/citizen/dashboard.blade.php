@@ -27,7 +27,7 @@
     </div>
 
     {{-- Quick Stats Cards --}}
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div id="citizen-stats-grid" class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition-colors">
             <div class="text-xs uppercase tracking-wider font-mono text-slate-400">Total Submitted</div>
             <div class="text-3xl font-extrabold font-mono text-white mt-1.5 leading-none">{{ $stats['total'] }}</div>
@@ -51,7 +51,7 @@
     </div>
 
     {{-- Incidents Table (Desktop) / Cards (Mobile) --}}
-    <div class="rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden shadow-xl">
+    <div id="citizen-logs-card" class="rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden shadow-xl">
         <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
             <h2 class="font-bold text-white text-base">Emergency Logs ({{ $incidents->total() }})</h2>
             <span class="text-xs font-mono text-slate-500">Live Status Feed</span>
@@ -205,3 +205,56 @@
 
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    // Real-time status update for citizen reports (Zero Tab Reload)
+    document.addEventListener('DOMContentLoaded', function() {
+        if (window.Echo) {
+            window.Echo.channel('user.{{ Auth::id() }}')
+                .listen('.NotificationSent', function() {
+                    refreshCitizenDashboardSilently();
+                })
+                .listen('NotificationSent', function() {
+                    refreshCitizenDashboardSilently();
+                });
+
+            window.Echo.channel('emergencies')
+                .listen('.IncidentStatusUpdated', function() {
+                    refreshCitizenDashboardSilently();
+                })
+                .listen('IncidentStatusUpdated', function() {
+                    refreshCitizenDashboardSilently();
+                });
+        }
+
+        // Silent background refresh: Updates DOM without reloading the tab
+        async function refreshCitizenDashboardSilently() {
+            try {
+                const response = await fetch(window.location.href, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (!response.ok) return;
+                const html = await response.text();
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+
+                const ids = ['citizen-stats-grid', 'citizen-logs-card'];
+                ids.forEach(id => {
+                    const newEl = doc.getElementById(id);
+                    const curEl = document.getElementById(id);
+                    if (newEl && curEl) curEl.innerHTML = newEl.innerHTML;
+                });
+            } catch (e) {
+                console.warn('Citizen dashboard sync notice:', e);
+            }
+        }
+
+        // Safety fallback: periodic silent check every 30s without reloading the tab
+        setInterval(function() {
+            if (!document.hidden) {
+                refreshCitizenDashboardSilently();
+            }
+        }, 30000);
+    });
+</script>
+@endpush

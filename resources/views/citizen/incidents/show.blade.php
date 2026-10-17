@@ -14,7 +14,7 @@
             <span class="text-slate-600">/</span>
             <span class="text-xs font-mono text-cyan-400 font-bold">{{ $incident->tracking_code }}</span>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
+        <div id="citizen-header-actions" class="flex flex-wrap items-center gap-2">
             @if($incident->status === 'Pending')
                 <a href="{{ route('citizen.incidents.edit', $incident->id) }}"
                     class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold font-mono bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/40 transition-all shadow-sm shadow-cyan-950/20 hover:-translate-y-0.5">
@@ -59,7 +59,7 @@
         </div>
 
         {{-- 4-Stage Response Pipeline --}}
-        <div>
+        <div id="citizen-pipeline-block">
             <div class="flex items-center justify-between mb-3">
                 <span class="text-xs uppercase font-mono tracking-wider text-slate-400 font-semibold">Emergency Response Pipeline</span>
                 <span class="text-[11px] font-mono text-cyan-400">Current Status: {{ $incident->status }}</span>
@@ -344,7 +344,7 @@
             </div>
 
             {{-- 2. ASSIGNED SPECIALIST CARD --}}
-            <div class="rounded-2xl bg-slate-900 border border-slate-800 p-6 shadow-xl space-y-4">
+            <div id="citizen-specialist-block" class="rounded-2xl bg-slate-900 border border-slate-800 p-6 shadow-xl space-y-4">
                 <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                     <div class="flex items-center space-x-2.5">
                         <div class="w-3 h-3 rounded-full bg-indigo-400"></div>
@@ -477,7 +477,7 @@
 @endif
 
 <script>
-    // Real-time Incident Status Updates via Laravel Echo / WebSockets
+    // Real-time Incident Status Updates via Laravel Echo / WebSockets (Zero Tab Reload)
     document.addEventListener('DOMContentLoaded', function() {
         if (window.Echo) {
             window.Echo.channel('incident.{{ $incident->id }}')
@@ -489,17 +489,44 @@
                 });
         }
 
+        // Silent background refresh: Updates DOM without reloading the tab
+        async function refreshCitizenIncidentSilently() {
+            try {
+                const response = await fetch(window.location.href, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (!response.ok) return;
+                const html = await response.text();
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+
+                const ids = ['citizen-header-actions', 'citizen-pipeline-block', 'citizen-specialist-block'];
+                ids.forEach(id => {
+                    const newEl = doc.getElementById(id);
+                    const curEl = document.getElementById(id);
+                    if (newEl && curEl) curEl.innerHTML = newEl.innerHTML;
+                });
+            } catch (e) {
+                console.warn('Citizen status sync notice:', e);
+            }
+        }
+
         function handleLiveStatusUpdate(inc) {
             if (typeof showLiveToast === 'function') {
                 showLiveToast(
                     '⚡ EMERGENCY STATUS UPDATED',
-                    'Tracking ' + (inc.tracking_code || '{{ $incident->tracking_code }}') + ' is now ' + (inc.status || 'Updated') + '. Syncing response pipeline...'
+                    'Tracking ' + (inc.tracking_code || '{{ $incident->tracking_code }}') + ' is now ' + (inc.status || 'Updated') + '. Response pipeline synced.'
                 );
             }
-            setTimeout(function() {
-                window.location.reload();
-            }, 1200);
+            // Silent DOM update without reloading the tab!
+            refreshCitizenIncidentSilently();
         }
+
+        // Safety fallback: periodic silent check every 25s without reloading the tab
+        setInterval(function() {
+            if (!document.hidden) {
+                refreshCitizenIncidentSilently();
+            }
+        }, 25000);
     });
 </script>
 @endpush

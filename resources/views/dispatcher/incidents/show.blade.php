@@ -339,9 +339,10 @@
     }
 </style>
 @endpush
+@endif
 
 @push('scripts')
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+@if($incident->hasCoordinates())
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const lat = {{ $incident->latitude }};
@@ -365,5 +366,22 @@
         `).openPopup();
     });
 </script>
-@endpush
 @endif
+
+<script>
+    // Real-time incident updates on dispatch console (Zero Tab Reload)
+    document.addEventListener('DOMContentLoaded', function() {
+        if (window.Echo) {
+            window.Echo.channel('incident.{{ $incident->id }}')
+                .listen('.IncidentStatusUpdated', function(event) {
+                    if (typeof showLiveToast === 'function') {
+                        showLiveToast('⚡ DISPATCH SYNC', 'Incident updated to ' + (event.incident?.status || 'Updated') + '. Console synchronized.');
+                    }
+                    if (typeof spaNavigate === 'function') {
+                        spaNavigate(window.location.href, false);
+                    }
+                });
+        }
+    });
+</script>
+@endpush

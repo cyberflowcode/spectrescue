@@ -22,6 +22,9 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     @endif
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Leaflet Maps (Preloaded for Seamless SPA Navigation) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
         * { font-family: 'Inter', sans-serif; }
@@ -94,7 +97,10 @@
 <body class="bg-slate-950 text-slate-100 antialiased selection:bg-cyan-500 selection:text-black">
 
 {{-- ==================== TOP HEADER ==================== --}}
-<header class="sticky top-0 z-50 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 h-14 flex items-center">
+<header id="app-top-header"
+    data-user-id="{{ Auth::id() ?? '' }}"
+    data-user-role="{{ Auth::user()->role ?? '' }}"
+    class="sticky top-0 z-50 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 h-14 flex items-center">
     <div class="flex items-center justify-between w-full px-4 sm:px-6">
 
         {{-- Brand Logo --}}
@@ -378,7 +384,8 @@
     @endif
     @endauth
 
-    {{-- ===== MOBILE DRAWER OVERLAY ===== --}}
+    {{-- ===== MOBILE DRAWER CONTAINER ===== --}}
+    <div id="mobile-drawer-container">
     @auth
     <div id="mobile-overlay" class="hidden fixed inset-0 z-40 drawer-overlay lg:hidden" onclick="closeMobileMenu()"></div>
 
@@ -557,6 +564,7 @@
         </div>
     </div>
     @endauth
+    </div>
 
     {{-- ===== MAIN CONTENT AREA ===== --}}
     <div class="flex-1 min-w-0 flex flex-col w-full overflow-x-hidden">
@@ -623,36 +631,48 @@
     </div>
 </div>
 
-{{-- ==================== SCRIPTS ==================== --}}
-<script>
-    // Mobile menu
+{{-- ==================== SPA TOP PROGRESS BAR ==================== --}}
+<div id="spa-progress-bar" class="fixed top-0 left-0 h-[2.5px] bg-gradient-to-r from-cyan-400 via-indigo-500 to-emerald-400 z-[9999] opacity-0 transition-all duration-300 pointer-events-none shadow-sm shadow-cyan-400/50" style="width:0%"></div>
+
+{{-- ==================== SCRIPTS & SPA ENGINE ==================== --}}
+<script id="app-core-script">
+    // ==================== 1. MOBILE DRAWER NAVIGATION ====================
     function openMobileMenu() {
-        document.getElementById('mobile-drawer').classList.remove('-translate-x-full');
-        document.getElementById('mobile-overlay').classList.remove('hidden');
+        const drawer = document.getElementById('mobile-drawer');
+        const overlay = document.getElementById('mobile-overlay');
+        if (drawer) drawer.classList.remove('-translate-x-full');
+        if (overlay) overlay.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
     }
     function closeMobileMenu() {
-        document.getElementById('mobile-drawer').classList.add('-translate-x-full');
-        document.getElementById('mobile-overlay').classList.add('hidden');
+        const drawer = document.getElementById('mobile-drawer');
+        const overlay = document.getElementById('mobile-overlay');
+        if (drawer) drawer.classList.add('-translate-x-full');
+        if (overlay) overlay.classList.add('hidden');
         document.body.style.overflow = '';
     }
-    const menuBtn = document.getElementById('mobile-menu-btn');
-    if (menuBtn) menuBtn.addEventListener('click', openMobileMenu);
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('#mobile-menu-btn')) {
+            openMobileMenu();
+        }
+    });
 
-    // Auto-dismiss flash alerts after 6 seconds
-    setTimeout(function() {
+    // ==================== 2. FLASH ALERTS AUTO-DISMISS ====================
+    function initFlashDismiss() {
         const container = document.getElementById('flash-container');
         if (container) {
-            container.querySelectorAll('[class*="alert-animate"]').forEach(function(el) {
-                el.style.transition = 'opacity 0.5s';
-                el.style.opacity = '0';
-                setTimeout(() => el.remove(), 500);
-            });
+            setTimeout(function() {
+                container.querySelectorAll('[class*="alert-animate"]').forEach(function(el) {
+                    el.style.transition = 'opacity 0.5s';
+                    el.style.opacity = '0';
+                    setTimeout(() => el.remove(), 500);
+                });
+            }, 6000);
         }
-    }, 6000);
+    }
+    initFlashDismiss();
 
-    // ==================== REAL-TIME WEBSOCKET NOTIFICATION ENGINE ====================
-    // Web Audio Synthesizer for instant audible alert (student-friendly, no external audio file needed)
+    // ==================== 3. WEB AUDIO TACTICAL CHIME ====================
     function playTacticalChime(frequency = 880, duration = 0.15) {
         try {
             const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -673,12 +693,10 @@
 
             osc.start();
             osc.stop(ctx.currentTime + duration);
-        } catch (e) {
-            // Audio policy fallback
-        }
+        } catch (e) {}
     }
 
-    // Live Toast Notification Builder
+    // ==================== 4. LIVE TOAST NOTIFICATIONS ====================
     function showLiveToast(title, message, link = null) {
         playTacticalChime(950, 0.2);
 
@@ -709,8 +727,6 @@
         `;
 
         container.appendChild(toast);
-
-        // Animate entrance
         requestAnimationFrame(() => {
             toast.classList.remove('translate-y-4', 'opacity-0');
         });
@@ -730,7 +746,6 @@
             }
         }
 
-        // Auto remove after 7 seconds
         setTimeout(() => {
             toast.style.transition = 'opacity 0.4s, transform 0.4s';
             toast.style.opacity = '0';
@@ -739,43 +754,303 @@
         }, 7000);
     }
 
-    // Connect WebSocket Listeners once Echo is initialized
-    document.addEventListener('DOMContentLoaded', function() {
-        if (window.Echo) {
-            @auth
-                // Listen for personal notifications sent to this specific user
-                window.Echo.channel('user.{{ Auth::id() }}')
-                    .listen('.NotificationSent', function(event) {
-                        const notif = event.notification || event;
-                        showLiveToast(notif.title || 'Mission Alert', notif.message || 'You have a new update.', notif.link);
-                    })
-                    .listen('NotificationSent', function(event) {
-                        const notif = event.notification || event;
-                        showLiveToast(notif.title || 'Mission Alert', notif.message || 'You have a new update.', notif.link);
-                    });
+    // ==================== 5. PERSISTENT WEBSOCKET LISTENERS ====================
+    let registeredEchoUserId = null;
+    let registeredEchoRole = null;
 
-                @if(Auth::user()->isDispatcher() || Auth::user()->isAdmin())
-                    // Real-time Emergency Alert Feed for Dispatchers & HQ Admins
-                    window.Echo.channel('emergencies')
-                        .listen('.NewEmergencyReported', function(event) {
-                            const inc = event.incident || event;
-                            showLiveToast(
-                                '🚨 NEW EMERGENCY: ' + (inc.tracking_code || 'SPECTRE-ALERT'),
-                                (inc.title || 'New anomaly reported') + ' in ' + (inc.location_city || 'sector'),
-                                '/dispatcher/incidents/' + inc.id
-                            );
-                        })
-                        .listen('NewEmergencyReported', function(event) {
-                            const inc = event.incident || event;
-                            showLiveToast(
-                                '🚨 NEW EMERGENCY: ' + (inc.tracking_code || 'SPECTRE-ALERT'),
-                                (inc.title || 'New anomaly reported') + ' in ' + (inc.location_city || 'sector'),
-                                '/dispatcher/incidents/' + inc.id
-                            );
-                        });
-                @endif
-            @endauth
+    function initWebSocketListeners() {
+        if (!window.Echo) return;
+
+        const header = document.getElementById('app-top-header');
+        const userId = header ? header.getAttribute('data-user-id') : null;
+        const userRole = header ? header.getAttribute('data-user-role') : null;
+
+        // Subscribe to user private channel on login/auth
+        if (userId && userId !== registeredEchoUserId) {
+            registeredEchoUserId = userId;
+            window.Echo.channel('user.' + userId)
+                .listen('.NotificationSent', function(event) {
+                    const notif = event.notification || event;
+                    showLiveToast(notif.title || 'Mission Alert', notif.message || 'You have a new update.', notif.link);
+                })
+                .listen('NotificationSent', function(event) {
+                    const notif = event.notification || event;
+                    showLiveToast(notif.title || 'Mission Alert', notif.message || 'You have a new update.', notif.link);
+                });
         }
+
+        // Subscribe to emergency alert channel for dispatchers and admins
+        if (userRole && (userRole === 'dispatcher' || userRole === 'admin') && userRole !== registeredEchoRole) {
+            registeredEchoRole = userRole;
+            window.Echo.channel('emergencies')
+                .listen('.NewEmergencyReported', function(event) {
+                    const inc = event.incident || event;
+                    showLiveToast(
+                        '🚨 NEW EMERGENCY: ' + (inc.tracking_code || 'SPECTRE-ALERT'),
+                        (inc.title || 'New anomaly reported') + ' in ' + (inc.location_city || 'sector'),
+                        '/dispatcher/incidents/' + inc.id
+                    );
+                })
+                .listen('NewEmergencyReported', function(event) {
+                    const inc = event.incident || event;
+                    showLiveToast(
+                        '🚨 NEW EMERGENCY: ' + (inc.tracking_code || 'SPECTRE-ALERT'),
+                        (inc.title || 'New anomaly reported') + ' in ' + (inc.location_city || 'sector'),
+                        '/dispatcher/incidents/' + inc.id
+                    );
+                });
+        }
+    }
+    document.addEventListener('DOMContentLoaded', initWebSocketListeners);
+    initWebSocketListeners();
+
+    // ==================== 6. SPA (SINGLE-PAGE APPLICATION) ROUTER ====================
+    let spaCurrentAbort = null;
+
+    function showSpaProgressBar() {
+        const bar = document.getElementById('spa-progress-bar');
+        if (!bar) return;
+        bar.style.opacity = '1';
+        bar.style.width = '35%';
+        setTimeout(() => { if (bar.style.width === '35%') bar.style.width = '75%'; }, 150);
+    }
+
+    function hideSpaProgressBar() {
+        const bar = document.getElementById('spa-progress-bar');
+        if (!bar) return;
+        bar.style.width = '100%';
+        setTimeout(() => {
+            bar.style.opacity = '0';
+            setTimeout(() => { bar.style.width = '0%'; }, 250);
+        }, 150);
+    }
+
+    function updateActiveNavLinks(targetUrl) {
+        try {
+            const urlObj = new URL(targetUrl, window.location.origin);
+            const path = urlObj.pathname;
+
+            document.querySelectorAll('.sidebar-link').forEach(link => {
+                const linkPath = new URL(link.href, window.location.origin).pathname;
+                if (linkPath === path) {
+                    link.classList.add('sidebar-active');
+                    link.classList.remove('text-slate-400');
+                } else {
+                    link.classList.remove('sidebar-active');
+                    link.classList.add('text-slate-400');
+                }
+            });
+        } catch (e) {}
+
+        if (typeof closeMobileMenu === 'function') closeMobileMenu();
+    }
+
+    function executeNewPageScripts(doc) {
+        // Collect scripts that belong to the new view
+        const scripts = doc.querySelectorAll('main script, body > script:not(#app-core-script)');
+        scripts.forEach(oldScript => {
+            if (oldScript.src) {
+                const alreadyLoaded = Array.from(document.scripts).some(s => s.src === oldScript.src);
+                if (alreadyLoaded) return;
+                const s = document.createElement('script');
+                s.src = oldScript.src;
+                s.async = false;
+                document.head.appendChild(s);
+                return;
+            }
+
+            const newScript = document.createElement('script');
+            newScript.textContent = oldScript.textContent;
+            document.body.appendChild(newScript);
+            newScript.remove();
+        });
+
+        // Dispatch events so newly mounted scripts immediately initialize
+        try {
+            document.dispatchEvent(new Event('DOMContentLoaded'));
+            document.dispatchEvent(new CustomEvent('spa:navigated', { detail: { url: window.location.href } }));
+        } catch (e) {}
+    }
+
+    // Unified SPA DOM Synchronizer
+    function applySpaPageUpdate(doc, targetUrl, pushState = true) {
+        // 1. Update Document Title
+        if (doc.title) document.title = doc.title;
+
+        // 2. Synchronize CSRF Token (Crucial for session state changes after login)
+        const newCsrf = doc.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        if (newCsrf) {
+            const curCsrf = document.querySelector('meta[name="csrf-token"]');
+            if (curCsrf) curCsrf.setAttribute('content', newCsrf);
+        }
+
+        // 3. Synchronize Top Header (Updates Citizen/Admin/Dispatcher nav, user pill, notif bell, logout button)
+        const newHeader = doc.getElementById('app-top-header');
+        const curHeader = document.getElementById('app-top-header');
+        if (newHeader && curHeader) {
+            curHeader.innerHTML = newHeader.innerHTML;
+            curHeader.setAttribute('data-user-id', newHeader.getAttribute('data-user-id') || '');
+            curHeader.setAttribute('data-user-role', newHeader.getAttribute('data-user-role') || '');
+        }
+
+        // 4. Synchronize Mobile Drawer Container (Updates mobile menu and user drawer)
+        const newDrawer = doc.getElementById('mobile-drawer-container');
+        const curDrawer = document.getElementById('mobile-drawer-container');
+        if (newDrawer && curDrawer) {
+            curDrawer.innerHTML = newDrawer.innerHTML;
+        }
+
+        // 5. Synchronize Flash Alerts
+        const newFlash = doc.getElementById('flash-container');
+        const curFlash = document.getElementById('flash-container');
+        if (newFlash && curFlash) {
+            curFlash.innerHTML = newFlash.innerHTML;
+            curFlash.className = newFlash.className;
+            initFlashDismiss();
+        }
+
+        // 6. Smoothly update Main View Content
+        const newMain = doc.querySelector('main');
+        const curMain = document.querySelector('main');
+        if (newMain && curMain) {
+            curMain.style.opacity = '0.7';
+            curMain.innerHTML = newMain.innerHTML;
+            curMain.className = newMain.className;
+            requestAnimationFrame(() => {
+                curMain.style.transition = 'opacity 0.15s ease-out';
+                curMain.style.opacity = '1';
+            });
+        }
+
+        // 7. Synchronize Admin Sidebar (Preserves Blade routeIs active states & dynamic badge counts)
+        const newSidebar = doc.getElementById('admin-sidebar');
+        const curSidebar = document.getElementById('admin-sidebar');
+        if (newSidebar && curSidebar) {
+            curSidebar.innerHTML = newSidebar.innerHTML;
+        } else if (newSidebar && !curSidebar) {
+            const shell = document.querySelector('.layout-shell');
+            if (shell) shell.insertBefore(newSidebar.cloneNode(true), shell.firstChild);
+        } else if (!newSidebar && curSidebar) {
+            curSidebar.remove();
+        }
+
+        // 8. Update History State
+        if (pushState) {
+            window.history.pushState({ url: targetUrl }, doc.title || '', targetUrl);
+        }
+
+        // 9. Update Navigation link states & smooth scroll
+        updateActiveNavLinks(targetUrl);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        // 10. Execute scripts in the newly mounted view & re-verify live listeners
+        executeNewPageScripts(doc);
+        initWebSocketListeners();
+    }
+
+    async function spaNavigate(url, pushState = true) {
+        if (spaCurrentAbort) {
+            spaCurrentAbort.abort();
+        }
+        spaCurrentAbort = new AbortController();
+
+        showSpaProgressBar();
+
+        try {
+            const response = await fetch(url, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-SPA-Request': 'true'
+                },
+                signal: spaCurrentAbort.signal
+            });
+
+            if (!response.ok) {
+                window.location.href = url;
+                return;
+            }
+
+            const html = await response.text();
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+
+            applySpaPageUpdate(doc, url, pushState);
+
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                console.warn('SPA Navigation fallback:', err);
+                window.location.href = url;
+            }
+        } finally {
+            hideSpaProgressBar();
+        }
+    }
+
+    // Intercept all internal anchor clicks for SPA transitions
+    document.addEventListener('click', function(e) {
+        const link = e.target.closest('a');
+        if (!link) return;
+
+        if (link.hasAttribute('data-no-spa') || link.hasAttribute('download')) return;
+        if (link.target && link.target !== '_self') return;
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        if (e.button !== 0) return;
+
+        const href = link.getAttribute('href');
+        if (!href || href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
+
+        const urlObj = new URL(link.href, window.location.origin);
+        if (urlObj.origin !== window.location.origin) return;
+        if (urlObj.pathname.startsWith('/storage/')) return;
+
+        e.preventDefault();
+        spaNavigate(link.href, true);
+    });
+
+    // Intercept form submissions for SPA transitions
+    document.addEventListener('submit', async function(e) {
+        const form = e.target;
+        if (form.hasAttribute('data-no-spa')) return;
+
+        const actionUrl = form.action || window.location.href;
+        const urlObj = new URL(actionUrl, window.location.origin);
+        if (urlObj.origin !== window.location.origin) return;
+
+        // Skip logout form to let native auth state clear cleanly if needed
+        if (urlObj.pathname.includes('/logout')) return;
+
+        e.preventDefault();
+        showSpaProgressBar();
+
+        try {
+            const formData = new FormData(form);
+            const method = (form.method || 'POST').toUpperCase();
+
+            const response = await fetch(actionUrl, {
+                method: method,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-SPA-Request': 'true'
+                },
+                body: method === 'GET' ? null : formData
+            });
+
+            const finalUrl = response.url || actionUrl;
+            const html = await response.text();
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+
+            applySpaPageUpdate(doc, finalUrl, true);
+
+        } catch (err) {
+            console.warn('SPA Form fallback:', err);
+            form.submit();
+        } finally {
+            hideSpaProgressBar();
+        }
+    });
+
+    // Handle Browser Back / Forward buttons
+    window.addEventListener('popstate', function() {
+        spaNavigate(window.location.href, false);
     });
 </script>
 

@@ -28,7 +28,7 @@
     </div>
 
     {{-- Live Metric Cards --}}
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div id="dispatcher-live-metrics" class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="p-5 rounded-2xl bg-slate-900 border border-amber-500/30 shadow-lg shadow-amber-950/20 relative overflow-hidden group hover:border-amber-500/60 transition-colors">
             <div class="flex items-center justify-between mb-2">
                 <span class="text-xs uppercase tracking-wider font-mono text-amber-400">Pending Triage</span>
@@ -76,6 +76,7 @@
             ];
         });
     @endphp
+    <script id="incidents-map-data" type="application/json">@json($incidentsData)</script>
 
     <div class="rounded-2xl bg-slate-900 border border-cyan-500/20 overflow-hidden shadow-xl shadow-cyan-950/10">
         {{-- Map Header --}}
@@ -129,7 +130,7 @@
     </div>
 
     {{-- ===== PENDING EMERGENCIES QUEUE ===== --}}
-    <div class="rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden shadow-xl">
+    <div id="dispatcher-pending-queue" class="rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden shadow-xl">
         <div class="px-6 py-4 border-b border-slate-800 bg-amber-950/10 flex items-center justify-between">
             <div class="flex items-center space-x-2">
                 <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
@@ -219,7 +220,7 @@
     </div>
 
     {{-- ===== ACTIVE MISSIONS ===== --}}
-    <div class="rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden shadow-xl">
+    <div id="dispatcher-active-queue" class="rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden shadow-xl">
         <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
             <h2 class="font-bold text-white text-base">
                 Active Field Operations
@@ -429,51 +430,26 @@ document.addEventListener('DOMContentLoaded', function() {
         'Responding': '#c084fc',
     };
 
-    if (incidents.length > 0) {
+    // Layer group for dynamic, seamless marker updates
+    const markersLayer = L.layerGroup().addTo(map);
+
+    function renderMarkers(items, fit = false) {
+        markersLayer.clearLayers();
+        if (!items || items.length === 0) return;
         const bounds = [];
 
-        incidents.forEach(inc => {
+        items.forEach(inc => {
             const colors = threatColors[inc.threat] || { fill: '#94a3b8', ring: '#cbd5e1', border: '#cbd5e1' };
             const statusColor = statusColors[inc.status] || '#94a3b8';
             const isCritical = inc.threat === 'Critical';
 
-            // Custom circle marker icon using DivIcon
             const iconHtml = `
-                <div style="
-                    position: relative;
-                    width: 28px;
-                    height: 28px;
-                ">
+                <div style="position: relative; width: 28px; height: 28px;">
                     ${isCritical ? `<div class="critical-ring" style="background: ${colors.fill}; opacity: 0.5;"></div>` : ''}
-                    <div style="
-                        position: absolute;
-                        inset: 4px;
-                        border-radius: 50%;
-                        background: ${colors.fill};
-                        border: 2.5px solid ${colors.border};
-                        box-shadow: 0 0 10px ${colors.fill}60;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                    ">
-                        <div style="
-                            width: 6px;
-                            height: 6px;
-                            border-radius: 50%;
-                            background: white;
-                            opacity: 0.9;
-                        "></div>
+                    <div style="position: absolute; inset: 4px; border-radius: 50%; background: ${colors.fill}; border: 2.5px solid ${colors.border}; box-shadow: 0 0 10px ${colors.fill}60; display: flex; align-items: center; justify-content: center;">
+                        <div style="width: 6px; height: 6px; border-radius: 50%; background: white; opacity: 0.9;"></div>
                     </div>
-                    <div style="
-                        position: absolute;
-                        bottom: -2px;
-                        right: -2px;
-                        width: 10px;
-                        height: 10px;
-                        border-radius: 50%;
-                        background: ${statusColor};
-                        border: 1.5px solid #0f172a;
-                    "></div>
+                    <div style="position: absolute; bottom: -2px; right: -2px; width: 10px; height: 10px; border-radius: 50%; background: ${statusColor}; border: 1.5px solid #0f172a;"></div>
                 </div>
             `;
 
@@ -485,90 +461,50 @@ document.addEventListener('DOMContentLoaded', function() {
                 popupAnchor: [0, -16],
             });
 
-            const marker = L.marker([inc.lat, inc.lng], { icon }).addTo(map);
+            const marker = L.marker([inc.lat, inc.lng], { icon });
+            markersLayer.addLayer(marker);
             bounds.push([inc.lat, inc.lng]);
 
-            // Styled popup
             marker.bindPopup(`
                 <div style="min-width: 200px; padding: 4px;">
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
                         <span style="color: ${statusColor}; font-weight: 800; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.05em;">
                             ${inc.code}
                         </span>
-                        <span style="
-                            background: ${colors.fill}30;
-                            color: ${colors.border};
-                            border: 1px solid ${colors.fill}50;
-                            padding: 1px 7px;
-                            border-radius: 999px;
-                            font-size: 9px;
-                            font-weight: 700;
-                            font-family: monospace;
-                            text-transform: uppercase;
-                        ">${inc.threat}</span>
+                        <span style="background: ${colors.fill}30; color: ${colors.border}; border: 1px solid ${colors.fill}50; padding: 1px 7px; border-radius: 999px; font-size: 9px; font-weight: 700; font-family: monospace; text-transform: uppercase;">${inc.threat}</span>
                     </div>
-                    <div style="font-weight: 700; color: #f1f5f9; font-size: 13px; margin-bottom: 4px; line-height: 1.3;">
-                        ${inc.title}
-                    </div>
-                    <div style="color: #94a3b8; font-size: 11px; margin-bottom: 10px;">
-                        📍 ${inc.address}
-                    </div>
-                    <div style="
-                        display: inline-flex;
-                        align-items: center;
-                        space-x: 4px;
-                        background: ${statusColor}20;
-                        color: ${statusColor};
-                        border: 1px solid ${statusColor}50;
-                        border-radius: 999px;
-                        padding: 2px 8px;
-                        font-size: 9px;
-                        font-weight: 600;
-                        font-family: monospace;
-                        text-transform: uppercase;
-                        margin-bottom: 10px;
-                    ">⚡ ${inc.status}</div>
-                    <a href="${inc.url}" style="
-                        display: block;
-                        text-align: center;
-                        background: #0284c7;
-                        color: #ffffff;
-                        font-size: 11px;
-                        font-weight: 700;
-                        padding: 7px 10px;
-                        border-radius: 8px;
-                        text-decoration: none;
-                        letter-spacing: 0.03em;
-                        transition: opacity 0.2s;
-                    " onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
-                        Open Dispatch Console →
-                    </a>
+                    <div style="font-weight: 700; color: #f1f5f9; font-size: 13px; margin-bottom: 4px; line-height: 1.3;">${inc.title}</div>
+                    <div style="color: #94a3b8; font-size: 11px; margin-bottom: 10px;">📍 ${inc.address}</div>
+                    <div style="display: inline-flex; align-items: center; background: ${statusColor}20; color: ${statusColor}; border: 1px solid ${statusColor}50; border-radius: 999px; padding: 2px 8px; font-size: 9px; font-weight: 600; font-family: monospace; text-transform: uppercase; margin-bottom: 10px;">⚡ ${inc.status}</div>
+                    <a href="${inc.url}" style="display: block; text-align: center; background: #0284c7; color: #ffffff; font-size: 11px; font-weight: 700; padding: 7px 10px; border-radius: 8px; text-decoration: none; letter-spacing: 0.03em;">Open Dispatch Console →</a>
                 </div>
             `);
 
-            // Open dispatch console on double click
             marker.on('dblclick', function() {
                 window.location.href = inc.url;
             });
         });
 
-        // Fit map to all markers
-        if (bounds.length === 1) {
-            map.setView(bounds[0], 14);
-        } else if (bounds.length > 1) {
-            map.fitBounds(bounds, { padding: [50, 50] });
+        if (fit && bounds.length > 0) {
+            if (bounds.length === 1) {
+                map.setView(bounds[0], 14);
+            } else {
+                map.fitBounds(bounds, { padding: [50, 50] });
+            }
         }
     }
 
-    // ==================== DISPATCHER REAL-TIME WEBSOCKET LISTENER ====================
+    // Initial map render
+    renderMarkers(incidents, true);
+
+    // ==================== DISPATCHER REAL-TIME WEBSOCKET LISTENER (ZERO TAB RELOAD) ====================
     if (window.Echo) {
-        // Listen to live public emergency broadcasts
         window.Echo.channel('emergencies')
             .listen('.NewEmergencyReported', function(event) {
-                handleIncomingLiveEmergency(event.incident || event);
+                handleIncomingLiveEmergency(event.incident || event, 'New Emergency');
             })
             .listen('NewEmergencyReported', function(event) {
-                handleIncomingLiveEmergency(event.incident || event);
+                handleIncomingLiveEmergency(event.incident || event, 'New Emergency');
             })
             .listen('.IncidentStatusUpdated', function(event) {
                 handleIncomingLiveEmergency(event.incident || event, 'Status Changed');
@@ -577,13 +513,59 @@ document.addEventListener('DOMContentLoaded', function() {
                 handleIncomingLiveEmergency(event.incident || event, 'Status Changed');
             });
     } else {
-        // Fallback indicator if WebSockets is not initialized
         const radarLabel = document.getElementById('ws-radar-label');
         if (radarLabel) radarLabel.innerText = 'Radar: Polling (Fallback)';
     }
 
+    // Silent background refresh: Updates DOM without reloading the tab
+    async function refreshDispatcherContentSilently() {
+        try {
+            const response = await fetch(window.location.href, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            if (!response.ok) return;
+            const html = await response.text();
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+
+            // Swap metric cards seamlessly
+            const newMetrics = doc.getElementById('dispatcher-live-metrics');
+            const curMetrics = document.getElementById('dispatcher-live-metrics');
+            if (newMetrics && curMetrics) curMetrics.innerHTML = newMetrics.innerHTML;
+
+            // Swap pending emergencies queue seamlessly
+            const newPending = doc.getElementById('dispatcher-pending-queue');
+            const curPending = document.getElementById('dispatcher-pending-queue');
+            if (newPending && curPending) curPending.innerHTML = newPending.innerHTML;
+
+            // Swap active missions queue seamlessly
+            const newActive = doc.getElementById('dispatcher-active-queue');
+            const curActive = document.getElementById('dispatcher-active-queue');
+            if (newActive && curActive) curActive.innerHTML = newActive.innerHTML;
+
+            // Update map markers smoothly
+            const newMapScript = doc.getElementById('incidents-map-data');
+            if (newMapScript) {
+                try {
+                    const newData = JSON.parse(newMapScript.textContent);
+                    renderMarkers(newData, false);
+                } catch (e) {}
+            }
+
+            // Return radar pill to steady state
+            const radarPill = document.getElementById('ws-radar-status');
+            if (radarPill) {
+                radarPill.classList.remove('bg-amber-500/20', 'border-amber-500/50', 'text-amber-300');
+                radarPill.classList.add('bg-emerald-500/10', 'border-emerald-500/30', 'text-emerald-400');
+                const label = document.getElementById('ws-radar-label');
+                if (label) label.innerText = 'Radar: WebSockets Live';
+            }
+        } catch (err) {
+            console.warn('Dispatcher live sync notice:', err);
+        }
+    }
+
     function handleIncomingLiveEmergency(incident, type = 'New Emergency') {
-        // Play distinct priority dispatch chime
+        // Sound priority dispatch chime
         try {
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             if (AudioContext) {
@@ -602,27 +584,25 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (e) {}
 
-        // Pulse radar pill
+        // Pulse radar pill during live sync
         const radarPill = document.getElementById('ws-radar-status');
         if (radarPill) {
             radarPill.classList.remove('bg-emerald-500/10', 'border-emerald-500/30', 'text-emerald-400');
             radarPill.classList.add('bg-amber-500/20', 'border-amber-500/50', 'text-amber-300');
             const label = document.getElementById('ws-radar-label');
-            if (label) label.innerText = 'Syncing Feed...';
+            if (label) label.innerText = 'Syncing Live Feed...';
         }
 
-        // Auto reload after 1.5 seconds to populate new rows in table and new marker on map
-        setTimeout(function() {
-            window.location.reload();
-        }, 1500);
+        // Silent DOM update without reloading the tab!
+        refreshDispatcherContentSilently();
     }
 
-    // Safety fallback: auto-check every 45s if idle
+    // Safety fallback: periodic silent check every 30s without reloading the tab
     setInterval(function() {
         if (!document.hidden) {
-            // Only periodic passive check if tab is active
+            refreshDispatcherContentSilently();
         }
-    }, 45000);
+    }, 30000);
 });
 </script>
 @endpush

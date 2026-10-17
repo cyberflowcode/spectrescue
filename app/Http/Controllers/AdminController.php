@@ -180,6 +180,19 @@ class AdminController extends Controller
             $query->where('role', $request->role);
         }
 
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('phone', 'like', "%{$search}%")
+                  ->orWhereHas('responderProfile', function ($rq) use ($search) {
+                      $rq->where('badge_number', 'like', "%{$search}%")
+                         ->orWhere('specialization', 'like', "%{$search}%");
+                  });
+            });
+        }
+
         $users = $query->latest()->paginate(15)->withQueryString();
 
         return view('admin.users.index', compact('users'));
@@ -201,6 +214,14 @@ class AdminController extends Controller
      */
     public function storeUser(Request $request)
     {
+        // Normalize phone if provided (convert +63 to 09, treat empty whitespace as null)
+        if ($request->filled('phone')) {
+            $cleaned = preg_replace('/^\+?63/', '0', trim($request->phone));
+            $request->merge(['phone' => $cleaned]);
+        } elseif ($request->has('phone') && trim($request->phone) === '') {
+            $request->merge(['phone' => null]);
+        }
+
         $rules = [
             'name'      => ['required', 'string', 'max:191'],
             'email'     => ['required', 'email', 'max:191', 'unique:users,email'],

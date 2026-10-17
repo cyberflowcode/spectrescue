@@ -5,7 +5,7 @@
 @section('content')
 <div class="space-y-6">
 
-    {{-- Header --}}
+    {{-- Header with Add New User --}}
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <div class="flex items-center space-x-2 mb-1">
@@ -16,43 +16,83 @@
             <p class="text-sm text-slate-400 mt-0.5">View, filter, and manage all registered system accounts</p>
         </div>
 
-        <div class="flex items-center space-x-2 shrink-0">
-            <a href="{{ route('admin.users.create') }}"
-                class="px-4 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 transition-all flex items-center space-x-1.5 hover:-translate-y-0.5 transform">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
-                </svg>
-                <span>Add New User</span>
-            </a>
+        <a href="{{ route('admin.users.create') }}"
+            class="px-4 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 transition-all flex items-center space-x-1.5 hover:-translate-y-0.5 transform shrink-0 self-start sm:self-auto">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+            </svg>
+            <span>Add New User</span>
+        </a>
     </div>
 
-    {{-- Filter tabs --}}
-    <div class="flex flex-wrap gap-2 text-xs font-mono">
-            <a href="{{ route('admin.users.index') }}"
+    {{-- Filter tabs & Search Bar Toolbar --}}
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        {{-- Role filter tabs --}}
+        <div class="flex flex-wrap items-center gap-2 text-xs font-mono">
+            <a href="{{ route('admin.users.index', array_filter(['search' => request('search')])) }}"
                 class="px-3 py-1.5 rounded-lg border transition-colors
                 {{ !request('role') ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40' : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white hover:border-slate-600' }}">
                 All ({{ \App\Models\User::count() }})
             </a>
-            <a href="{{ route('admin.users.index', ['role' => 'citizen']) }}"
+            <a href="{{ route('admin.users.index', array_filter(['role' => 'citizen', 'search' => request('search')])) }}"
                 class="px-3 py-1.5 rounded-lg border transition-colors
                 {{ request('role') == 'citizen' ? 'bg-slate-600/30 text-slate-200 border-slate-500/40' : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white hover:border-slate-600' }}">
                 Citizens ({{ \App\Models\User::where('role','citizen')->count() }})
             </a>
-            <a href="{{ route('admin.users.index', ['role' => 'responder']) }}"
+            <a href="{{ route('admin.users.index', array_filter(['role' => 'responder', 'search' => request('search')])) }}"
                 class="px-3 py-1.5 rounded-lg border transition-colors
                 {{ request('role') == 'responder' ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white hover:border-slate-600' }}">
                 Responders ({{ \App\Models\User::where('role','responder')->count() }})
             </a>
-            <a href="{{ route('admin.users.index', ['role' => 'dispatcher']) }}"
+            <a href="{{ route('admin.users.index', array_filter(['role' => 'dispatcher', 'search' => request('search')])) }}"
                 class="px-3 py-1.5 rounded-lg border transition-colors
                 {{ request('role') == 'dispatcher' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white hover:border-slate-600' }}">
                 Dispatchers ({{ \App\Models\User::where('role','dispatcher')->count() }})
             </a>
-            <a href="{{ route('admin.users.index', ['role' => 'admin']) }}"
+            <a href="{{ route('admin.users.index', array_filter(['role' => 'admin', 'search' => request('search')])) }}"
                 class="px-3 py-1.5 rounded-lg border transition-colors
                 {{ request('role') == 'admin' ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40' : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white hover:border-slate-600' }}">
                 Admins ({{ \App\Models\User::where('role','admin')->count() }})
             </a>
+        </div>
+
+        {{-- Search Filter Form --}}
+        <div class="flex items-center gap-2">
+            <form method="GET" action="{{ route('admin.users.index') }}" class="flex items-center gap-2 w-full sm:w-auto">
+                @if(request('role'))
+                    <input type="hidden" name="role" value="{{ request('role') }}">
+                @endif
+                <div class="relative w-full sm:w-72">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </div>
+                    <input type="text" name="search" value="{{ request('search') }}"
+                        placeholder="Search name, email, badge, phone..."
+                        class="w-full pl-9 pr-7 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 transition-colors">
+                    @if(request('search'))
+                        <a href="{{ route('admin.users.index', array_filter(['role' => request('role')])) }}"
+                            class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-white text-sm leading-none"
+                            title="Clear search">
+                            &times;
+                        </a>
+                    @endif
+                </div>
+                <button type="submit"
+                    class="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 hover:border-slate-600 transition-colors shrink-0">
+                    Search
+                </button>
+            </form>
+
+            @if(request('search') || request('role'))
+                <a href="{{ route('admin.users.index') }}"
+                    class="text-xs font-mono text-slate-400 hover:text-white flex items-center space-x-1 shrink-0 transition-colors px-1"
+                    title="Reset all filters">
+                    <span>Reset</span>
+                    <span>&times;</span>
+                </a>
+            @endif
         </div>
     </div>
 
@@ -174,7 +214,14 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" class="p-10 text-center text-xs text-slate-500">No users found.</td>
+                        <td colspan="7" class="p-10 text-center text-xs text-slate-500">
+                            @if(request('search'))
+                                No users found matching "<span class="text-white font-semibold">{{ request('search') }}</span>".
+                                <a href="{{ route('admin.users.index', array_filter(['role' => request('role')])) }}" class="text-indigo-400 hover:underline ml-1">Clear search</a>
+                            @else
+                                No users found.
+                            @endif
+                        </td>
                     </tr>
                     @endforelse
                 </tbody>
@@ -252,7 +299,14 @@
                 </div>
             </div>
             @empty
-            <div class="p-10 text-center text-xs text-slate-500">No users found.</div>
+            <div class="p-10 text-center text-xs text-slate-500">
+                @if(request('search'))
+                    No users found matching "<span class="text-white font-semibold">{{ request('search') }}</span>".
+                    <a href="{{ route('admin.users.index', array_filter(['role' => request('role')])) }}" class="text-indigo-400 hover:underline ml-1">Clear search</a>
+                @else
+                    No users found.
+                @endif
+            </div>
             @endforelse
         </div>
 

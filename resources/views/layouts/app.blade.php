@@ -943,6 +943,10 @@
         updateActiveNavLinks(targetUrl);
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
+        if (document.activeElement && typeof document.activeElement.blur === 'function') {
+            document.activeElement.blur();
+        }
+
         // 10. Execute scripts in the newly mounted view & re-verify live listeners
         executeNewPageScripts(doc);
         initWebSocketListeners();
@@ -1025,14 +1029,68 @@
             const formData = new FormData(form);
             const method = (form.method || 'POST').toUpperCase();
 
+            // Handle GET forms (search bars, filter dropdowns) by building query string and navigating via SPA
+            if (method === 'GET') {
+                const searchParams = new URLSearchParams();
+                for (const [key, value] of formData.entries()) {
+                    if (typeof value === 'string' && value.trim() !== '') {
+                        searchParams.append(key, value.trim());
+                    }
+                }
+                const base = actionUrl.split('?')[0];
+                const finalGetUrl = searchParams.toString() ? `${base}?${searchParams.toString()}` : base;
+                await spaNavigate(finalGetUrl, true);
+                return;
+            }
+
+            // Ensure CSRF token is up to date for POST / PUT / DELETE
+            const currentCsrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            if (currentCsrf && !formData.has('_token')) {
+                formData.append('_token', currentCsrf);
+            }
+
             const response = await fetch(actionUrl, {
                 method: method,
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                     'X-SPA-Request': 'true'
                 },
-                body: method === 'GET' ? null : formData
+                body: formData
             });
+
+            const contentType = response.headers.get('content-type') || '';
+
+            // If Laravel returned JSON (e.g. 422 validation failure), display error banner in flash container
+            if (contentType.includes('application/json')) {
+                const data = await response.json();
+                let errMsg = data.message || 'Validation failed. Please review your input.';
+                if (data.errors) {
+                    const allErrors = Object.values(data.errors).flat();
+                    errMsg = allErrors.map(msg => `<li>${msg}</li>`).join('');
+                    errMsg = `<ul class="list-disc list-inside space-y-1">${errMsg}</ul>`;
+                }
+                const flash = document.getElementById('flash-container');
+                if (flash) {
+                    flash.className = 'px-3 sm:px-6 lg:px-8 pt-4 space-y-2';
+                    flash.innerHTML = `
+                        <div class="alert-animate p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 shadow-lg shadow-red-950/30 flex items-start justify-between">
+                            <div class="flex items-start space-x-3">
+                                <svg class="w-5 h-5 text-red-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                </svg>
+                                <div>
+                                    <div class="font-semibold text-sm text-red-400 mb-1">Please correct the following errors:</div>
+                                    <div class="text-xs text-red-200/90">${errMsg}</div>
+                                </div>
+                            </div>
+                            <button onclick="this.closest('.alert-animate').remove()" class="text-red-400 hover:text-white text-xl leading-none ml-4">&times;</button>
+                        </div>
+                    `;
+                    initFlashDismiss();
+                }
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
 
             const finalUrl = response.url || actionUrl;
             const html = await response.text();

@@ -234,61 +234,71 @@
 </div>
 
 <script>
-    function toggleResponderSection(role) {
-        const section = document.getElementById('responderSection');
-        const specInput = document.getElementById('specialization');
-        const badgeInput = document.getElementById('badge_number');
+    window.toggleResponderSection = function(role) {
+        var section = document.getElementById('responderSection');
+        var specInput = document.getElementById('specialization');
+        var badgeInput = document.getElementById('badge_number');
+        if (!section) return;
 
         if (role === 'responder') {
             section.classList.remove('hidden');
-            specInput.required = true;
-            badgeInput.required = true;
-            if (!badgeInput.value) {
-                generateBadgeNumber();
+            if (specInput) specInput.required = true;
+            if (badgeInput) {
+                badgeInput.required = true;
+                if (!badgeInput.value) {
+                    window.generateBadgeNumber();
+                }
             }
         } else {
             section.classList.add('hidden');
-            specInput.required = false;
-            badgeInput.required = false;
+            if (specInput) specInput.required = false;
+            if (badgeInput) badgeInput.required = false;
         }
-    }
+    };
 
-    function updateBadgePrefix(selectEl) {
-        generateBadgeNumber();
-    }
+    window.updateBadgePrefix = function(selectEl) {
+        window.generateBadgeNumber();
+    };
 
-    function generateBadgeNumber() {
-        const specSelect = document.getElementById('specialization');
-        let prefix = 'RSP';
+    window.generateBadgeNumber = function() {
+        var specSelect = document.getElementById('specialization');
+        var badgeInput = document.getElementById('badge_number');
+        if (!badgeInput) return;
+        var prefix = 'RSP';
         if (specSelect && specSelect.selectedIndex >= 0) {
-            const opt = specSelect.options[specSelect.selectedIndex];
+            var opt = specSelect.options[specSelect.selectedIndex];
             if (opt && opt.dataset.prefix) {
                 prefix = opt.dataset.prefix;
             }
         }
-        const randomNum = Math.floor(1000 + Math.random() * 9000);
-        document.getElementById('badge_number').value = prefix + '-' + randomNum;
-    }
+        var randomNum = Math.floor(1000 + Math.random() * 9000);
+        badgeInput.value = prefix + '-' + randomNum;
+    };
 
-    // Phone formatting (e.g. 0912 345 6789)
-    const phoneInput = document.getElementById('phone');
-    if (phoneInput) {
-        phoneInput.addEventListener('input', function(e) {
-            let v = e.target.value.replace(/\D/g, '').substring(0, 11);
-            let formatted = '';
-            if (v.length > 0) formatted += v.substring(0, 4);
-            if (v.length > 4) formatted += ' ' + v.substring(4, 7);
-            if (v.length > 7) formatted += ' ' + v.substring(7, 11);
-            e.target.value = formatted;
-        });
-    }
+    (function() {
+        function initCreateUserForm() {
+            var roleSelect = document.getElementById('role');
+            if (roleSelect) {
+                window.toggleResponderSection(roleSelect.value);
+            }
 
-    // Initialize state on load
-    document.addEventListener('DOMContentLoaded', function() {
-        const roleSelect = document.getElementById('role');
-        if (roleSelect) {
-            toggleResponderSection(roleSelect.value);
+            var phoneEl = document.getElementById('phone');
+            if (phoneEl && !phoneEl.dataset.formatBound) {
+                phoneEl.dataset.formatBound = 'true';
+                phoneEl.addEventListener('input', function(e) {
+                    var v = e.target.value.replace(/\D/g, '').substring(0, 11);
+                    var formatted = '';
+                    if (v.length > 0) formatted += v.substring(0, 4);
+                    if (v.length > 4) formatted += ' ' + v.substring(4, 7);
+                    if (v.length > 7) formatted += ' ' + v.substring(7, 11);
+                    e.target.value = formatted;
+                });
+            }
         }
-    });
+
+        initCreateUserForm();
+        document.addEventListener('DOMContentLoaded', initCreateUserForm);
+        document.addEventListener('spa:navigated', initCreateUserForm);
+    })();
 </script>
 @endsection

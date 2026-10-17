@@ -199,8 +199,8 @@
                     </div>
                 </div>
 
-                <!-- Submit / Action Buttons -->
-                <div class="flex items-center space-x-3 pt-2">
+                <!-- Submit / Action Buttons (Desktop Only; on mobile it appears below the tactical map pin) -->
+                <div class="hidden lg:flex items-center space-x-3 pt-2">
                     <button type="submit" class="flex-1 py-3.5 rounded-xl font-bold bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-500/25 transition-all flex items-center justify-center space-x-2 text-sm cursor-pointer">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />

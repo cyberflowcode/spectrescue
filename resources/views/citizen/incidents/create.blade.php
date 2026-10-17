@@ -137,8 +137,8 @@
                     </div>
                 </div>
 
-                <!-- Submit Button -->
-                <div class="pt-2">
+                <!-- Submit Button (Desktop Only; on mobile it appears below the tactical map pin) -->
+                <div class="hidden lg:block pt-2">
                     <button type="submit" class="w-full py-3.5 rounded-xl font-bold bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-600/30 transition-all flex items-center justify-center space-x-2.5 text-base cursor-pointer">
                         <svg class="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />

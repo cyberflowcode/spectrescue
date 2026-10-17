@@ -185,7 +185,8 @@
                     <form method="POST" action="{{ route('responder.assignments.respond', $assignment->id) }}">
                         @csrf
                         <input type="hidden" name="action" value="accept">
-                        <button type="submit" class="px-5 py-2.5 rounded-xl font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-md shadow-emerald-500/20 text-xs transition-all flex items-center space-x-2">
+                        <input type="hidden" name="redirect_to" value="{{ route('responder.assignments.show', $assignment->id) }}">
+                        <button type="submit" class="px-5 py-2.5 rounded-xl font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-md shadow-emerald-500/20 text-xs transition-all flex items-center space-x-2 cursor-pointer">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                             </svg>
@@ -197,8 +198,9 @@
                     <form method="POST" action="{{ route('responder.assignments.respond', $assignment->id) }}">
                         @csrf
                         <input type="hidden" name="action" value="decline">
+                        <input type="hidden" name="redirect_to" value="{{ route('responder.dashboard') }}">
                         <button type="submit" onclick="return confirm('Confirm declining this emergency?');"
-                            class="px-4 py-2.5 rounded-xl font-medium bg-slate-800 hover:bg-red-500/20 text-slate-400 hover:text-red-300 border border-slate-700 text-xs transition-colors">
+                            class="px-4 py-2.5 rounded-xl font-medium bg-slate-800 hover:bg-red-500/20 text-slate-400 hover:text-red-300 border border-slate-700 text-xs transition-colors cursor-pointer">
                             Decline Call
                         </button>
                     </form>
@@ -242,28 +244,48 @@
 @push('scripts')
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    function initResponderMissionMap() {
+        const container = document.getElementById('responder-mission-map');
+        if (!container || typeof L === 'undefined') return;
+
+        if (container._leaflet_id) {
+            try {
+                container._leaflet_id = null;
+            } catch(e) {}
+        }
+
         const lat = {{ $assignment->incident->latitude }};
         const lng = {{ $assignment->incident->longitude }};
 
-        const map = L.map('responder-mission-map', {
-            zoomControl: false,
-            scrollWheelZoom: false
-        }).setView([lat, lng], 15);
+        try {
+            const map = L.map(container, {
+                zoomControl: false,
+                scrollWheelZoom: false
+            }).setView([lat, lng], 15);
 
-        // 100% Free Official OpenStreetMap Tile Server
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
-        }).addTo(map);
+            // 100% Free Official OpenStreetMap Tile Server
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
+            }).addTo(map);
 
-        const marker = L.marker([lat, lng]).addTo(map);
-        marker.bindPopup(`
-            <div class="text-xs font-mono font-bold text-cyan-400">{{ $assignment->incident->tracking_code }}</div>
-            <div class="text-xs text-white font-bold">{{ $assignment->incident->title }}</div>
-            <div class="text-[10px] text-slate-400 mt-1">{{ $assignment->incident->location_address }}</div>
-        `).openPopup();
-    });
+            const marker = L.marker([lat, lng]).addTo(map);
+            marker.bindPopup(`
+                <div class="text-xs font-mono font-bold text-cyan-400">{{ $assignment->incident->tracking_code }}</div>
+                <div class="text-xs text-white font-bold">{{ $assignment->incident->title }}</div>
+                <div class="text-[10px] text-slate-400 mt-1">{{ $assignment->incident->location_address }}</div>
+            `).openPopup();
+        } catch(e) {
+            console.warn('Map initialization:', e);
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initResponderMissionMap);
+    } else {
+        initResponderMissionMap();
+    }
+    document.addEventListener('spa:navigated', initResponderMissionMap);
 </script>
 @endpush
 @endif

@@ -30,7 +30,7 @@ class ResponderController extends Controller
             ->where('responder_id', $responder->id)
             ->whereIn('status', ['assigned', 'accepted'])
             ->whereHas('incident', function ($q) {
-                $q->whereIn('status', ['Dispatched', 'Responding']);
+                $q->where('status', '!=', 'Resolved');
             })
             ->latest()
             ->get();
@@ -120,7 +120,12 @@ class ResponderController extends Controller
                 broadcast(new \App\Events\IncidentStatusUpdated($incident));
             } catch (\Throwable $e) {}
 
-            return back()->with('success', 'Emergency assignment accepted! Proceed to containment location.');
+            $targetUrl = $request->input('redirect_to')
+                ?: ($request->header('referer') && !str_contains($request->header('referer'), '/respond')
+                    ? $request->header('referer')
+                    : route('responder.assignments.show', $assignment->id));
+
+            return redirect($targetUrl)->with('success', 'Emergency assignment accepted! Proceed to containment location.');
         } else {
             $assignment->update([
                 'status'          => 'declined',

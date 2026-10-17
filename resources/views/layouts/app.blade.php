@@ -963,7 +963,7 @@
         try {
             const response = await fetch(url, {
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                     'X-SPA-Request': 'true'
                 },
                 signal: spaCurrentAbort.signal
@@ -1015,9 +1015,14 @@
         const form = e.target;
         if (form.hasAttribute('data-no-spa')) return;
 
-        const actionUrl = form.action || window.location.href;
-        const urlObj = new URL(actionUrl, window.location.origin);
+        // Use getAttribute because child inputs named 'action' or 'method' shadow form.action / form.method DOM properties
+        const rawAction = (typeof form.getAttribute === 'function' ? form.getAttribute('action') : null)
+            || (typeof form.action === 'string' ? form.action : null)
+            || '';
+        const urlObj = new URL(rawAction || window.location.href, window.location.origin);
         if (urlObj.origin !== window.location.origin) return;
+
+        const actionUrl = urlObj.href;
 
         // Skip logout form to let native auth state clear cleanly if needed
         if (urlObj.pathname.includes('/logout')) return;
@@ -1027,7 +1032,9 @@
 
         try {
             const formData = new FormData(form);
-            const method = (form.method || 'POST').toUpperCase();
+            const rawMethod = (typeof form.getAttribute === 'function' ? form.getAttribute('method') : null)
+                || (typeof form.method === 'string' ? form.method : 'POST');
+            const method = (rawMethod || 'POST').toUpperCase();
 
             // Handle GET forms (search bars, filter dropdowns) by building query string and navigating via SPA
             if (method === 'GET') {
@@ -1100,7 +1107,11 @@
 
         } catch (err) {
             console.warn('SPA Form fallback:', err);
-            form.submit();
+            try {
+                HTMLFormElement.prototype.submit.call(form);
+            } catch(e) {
+                form.submit();
+            }
         } finally {
             hideSpaProgressBar();
         }

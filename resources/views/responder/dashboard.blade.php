@@ -162,17 +162,19 @@
                                 <form method="POST" action="{{ route('responder.assignments.respond', $assignment->id) }}">
                                     @csrf
                                     <input type="hidden" name="action" value="accept">
+                                    <input type="hidden" name="redirect_to" value="{{ route('responder.dashboard') }}">
                                     <button type="submit"
-                                        class="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow shadow-emerald-500/20 transition-all">
+                                        class="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow shadow-emerald-500/20 transition-all cursor-pointer">
                                         ✓ Accept Mission
                                     </button>
                                 </form>
                                 <form method="POST" action="{{ route('responder.assignments.respond', $assignment->id) }}">
                                     @csrf
                                     <input type="hidden" name="action" value="decline">
+                                    <input type="hidden" name="redirect_to" value="{{ route('responder.dashboard') }}">
                                     <button type="submit"
                                         onclick="return confirm('Decline this emergency call? It returns to the dispatch queue.');"
-                                        class="px-3 py-2 rounded-xl text-xs font-medium bg-slate-800 hover:bg-red-500/15 text-slate-400 hover:text-red-300 border border-slate-700 transition-colors">
+                                        class="px-3 py-2 rounded-xl text-xs font-medium bg-slate-800 hover:bg-red-500/15 text-slate-400 hover:text-red-300 border border-slate-700 transition-colors cursor-pointer">
                                         Decline
                                     </button>
                                 </form>
